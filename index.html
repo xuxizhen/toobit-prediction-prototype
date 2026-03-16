@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toobit 预测市场 - 需求原型</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a1a; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.container { max-width: 800px; width: 100%; padding: 40px 20px; }
+.header { text-align: center; margin-bottom: 48px; }
+.logo { font-size: 32px; font-weight: bold; margin-bottom: 8px; }
+.logo span { color: #3b82f6; }
+.subtitle { color: #888; font-size: 16px; }
+.version { color: #555; font-size: 13px; margin-top: 4px; }
+.cards { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.card { background: #12122a; border: 1px solid #1e1e3a; border-radius: 16px; padding: 28px; cursor: pointer; transition: all 0.3s; text-decoration: none; color: inherit; display: block; }
+.card:hover { border-color: #3b82f6; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(59,130,246,0.15); }
+.card-title { font-size: 20px; font-weight: bold; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.card-icon { font-size: 28px; }
+.card-desc { color: #888; font-size: 14px; line-height: 1.6; }
+.card-tags { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; }
+.tag { background: #1e1e3a; color: #aaa; padding: 4px 12px; border-radius: 20px; font-size: 12px; }
+.tag.blue { background: rgba(59,130,246,0.15); color: #3b82f6; }
+.tag.pink { background: rgba(236,72,153,0.15); color: #ec4899; }
+.tag.green { background: rgba(34,197,94,0.15); color: #22c55e; }
+.footer { text-align: center; margin-top: 48px; color: #555; font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="logo"><span>Toobit</span> Prediction Market</div>
+    <div class="subtitle">预测市场产品需求原型</div>
+    <div class="version">PRD v2.0 | 2026-03-16</div>
+  </div>
+  <div class="cards">
+    <a class="card" href="web-prototype.html">
+      <div class="card-title"><span class="card-icon">🖥️</span> Web 端原型</div>
+      <div class="card-desc">集成 Toobit 现有网页设计，包含事件大厅（列表式）、交易详情页（混合式布局：可折叠侧边栏 + 图表/订单簿 + 交易面板）、持仓管理页。暗色主题，YES 蓝 / NO 粉配色。</div>
+      <div class="card-tags">
+        <span class="tag blue">事件大厅</span>
+        <span class="tag blue">交易页</span>
+        <span class="tag blue">持仓管理</span>
+        <span class="tag">TradingView</span>
+        <span class="tag">订单簿</span>
+      </div>
+    </a>
+    <a class="card" href="app-prototype.html">
+      <div class="card-title"><span class="card-icon">📱</span> APP 端原型</div>
+      <div class="card-desc">集成 Toobit 现有 APP 设计，iPhone 设备框架展示。包含市场（卡片流）、交易详情（图表+底部交易面板）、持仓、订单、我的 5 个屏幕，底部 Tab 导航。</div>
+      <div class="card-tags">
+        <span class="tag pink">卡片流</span>
+        <span class="tag pink">底部Tab</span>
+        <span class="tag pink">交易面板</span>
+        <span class="tag">5个屏幕</span>
+        <span class="tag">触控交互</span>
+      </div>
+    </a>
+    <a class="card" href="admin-prototype.html">
+      <div class="card-title"><span class="card-icon">⚙️</span> 管理后台原型</div>
+      <div class="card-desc">经典侧边栏布局，亮色主题。包含仪表盘、事件管理（CRUD+审核）、结算中心（双人复核+冷静期）、做市管理、风控监控、数据分析 6 个页面。</div>
+      <div class="card-tags">
+        <span class="tag green">仪表盘</span>
+        <span class="tag green">事件管理</span>
+        <span class="tag green">结算中心</span>
+        <span class="tag">做市管理</span>
+        <span class="tag">风控监控</span>
+      </div>
+    </a>
+  </div>
+  <div class="footer">Toobit Prediction Market &copy; 2026 | 产品需求原型 - 仅供内部评审</div>
+</div>
+</body>
+</html>

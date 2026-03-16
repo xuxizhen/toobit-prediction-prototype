@@ -1,0 +1,1599 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toobit Prediction Market - Admin Console</title>
+<style>
+/* ===== RESET & BASE ===== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+  background: #f1f5f9; color: #1e293b; min-height: 100vh; display: flex;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; font-size: inherit; border: none; background: none; }
+input, select, textarea { font-family: inherit; font-size: inherit; }
+table { border-collapse: collapse; width: 100%; }
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 240px; min-height: 100vh; background: #1e293b; color: #fff;
+  position: fixed; left: 0; top: 0; bottom: 0; z-index: 100;
+  display: flex; flex-direction: column; transition: width .2s;
+}
+.sidebar-logo {
+  padding: 20px 20px 16px; font-size: 18px; font-weight: 700;
+  border-bottom: 1px solid #334155; display: flex; align-items: center; gap: 10px;
+}
+.sidebar-logo .logo-icon {
+  width: 32px; height: 32px; background: #2563eb; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 800;
+}
+.sidebar-nav { flex: 1; padding: 12px 0; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px; padding: 11px 20px;
+  color: #94a3b8; cursor: pointer; transition: all .15s; font-size: 14px; position: relative;
+}
+.nav-item:hover { color: #e2e8f0; background: rgba(255,255,255,.05); }
+.nav-item.active { color: #fff; background: rgba(37,99,235,.3); }
+.nav-item.active::before {
+  content: ''; position: absolute; left: 0; top: 4px; bottom: 4px; width: 3px;
+  background: #2563eb; border-radius: 0 3px 3px 0;
+}
+.nav-icon { width: 20px; text-align: center; font-size: 16px; flex-shrink: 0; }
+.sidebar-footer {
+  padding: 16px 20px; border-top: 1px solid #334155;
+  font-size: 12px; color: #64748b;
+}
+
+/* ===== MAIN ===== */
+.main { margin-left: 240px; flex: 1; min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ===== HEADER ===== */
+.header {
+  background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 28px;
+  height: 60px; display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}
+.header-left { display: flex; align-items: center; gap: 8px; }
+.header-left h1 { font-size: 18px; font-weight: 600; }
+.header-right { display: flex; align-items: center; gap: 20px; }
+.header-bell {
+  position: relative; font-size: 20px; cursor: pointer; color: #64748b;
+}
+.header-bell .badge {
+  position: absolute; top: -4px; right: -6px; background: #ef4444; color: #fff;
+  font-size: 10px; padding: 1px 5px; border-radius: 10px; font-weight: 600;
+}
+.header-user { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.header-avatar {
+  width: 32px; height: 32px; border-radius: 50%; background: #2563eb;
+  color: #fff; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600;
+}
+.header-user-info { line-height: 1.3; }
+.header-user-name { font-weight: 600; font-size: 13px; }
+.header-user-role { font-size: 11px; color: #94a3b8; }
+
+/* ===== CONTENT ===== */
+.content { flex: 1; padding: 24px 28px; }
+.page { display: none; }
+.page.active { display: block; }
+
+/* ===== CARDS ===== */
+.card {
+  background: #fff; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  border: 1px solid #e2e8f0;
+}
+.card-header {
+  padding: 16px 20px; border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.card-header h3 { font-size: 15px; font-weight: 600; }
+.card-body { padding: 20px; }
+
+/* Stat Cards */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.stat-card {
+  background: #fff; border-radius: 10px; padding: 20px; border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.stat-card .stat-label { font-size: 13px; color: #64748b; margin-bottom: 6px; }
+.stat-card .stat-value { font-size: 28px; font-weight: 700; }
+.stat-card .stat-sub { font-size: 12px; color: #94a3b8; margin-top: 4px; display: flex; align-items: center; gap: 4px; }
+.stat-card .stat-sub.up { color: #22c55e; }
+.stat-card .stat-sub.down { color: #ef4444; }
+.stat-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; margin-bottom: 10px; }
+
+/* ===== BADGE ===== */
+.badge-pill {
+  display: inline-block; padding: 3px 10px; border-radius: 12px;
+  font-size: 12px; font-weight: 500; line-height: 1.4;
+}
+.badge-draft { background: #f1f5f9; color: #64748b; }
+.badge-pending { background: #fef3c7; color: #92400e; }
+.badge-active { background: #dcfce7; color: #166534; }
+.badge-settling { background: #dbeafe; color: #1e40af; }
+.badge-settled { background: #f1f5f9; color: #475569; }
+.badge-void { background: #fee2e2; color: #991b1b; }
+.badge-category {
+  display: inline-block; padding: 2px 8px; border-radius: 6px;
+  font-size: 11px; font-weight: 500; background: #ede9fe; color: #5b21b6;
+}
+.badge-cat-politics { background: #fce7f3; color: #9d174d; }
+.badge-cat-sports { background: #d1fae5; color: #065f46; }
+.badge-cat-crypto { background: #fff7ed; color: #9a3412; }
+.badge-cat-finance { background: #dbeafe; color: #1e40af; }
+.badge-cat-entertainment { background: #ede9fe; color: #5b21b6; }
+
+/* ===== TABLE ===== */
+.table-wrapper { overflow-x: auto; }
+table th {
+  text-align: left; padding: 10px 14px; font-size: 12px; font-weight: 600;
+  color: #64748b; text-transform: uppercase; letter-spacing: .5px;
+  background: #f8fafc; border-bottom: 1px solid #e2e8f0;
+}
+table td {
+  padding: 12px 14px; border-bottom: 1px solid #f1f5f9; font-size: 13px;
+  vertical-align: middle;
+}
+table tbody tr:hover { background: #f8fafc; }
+.table-actions { display: flex; gap: 6px; }
+
+/* ===== BUTTONS ===== */
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 7px 16px;
+  border-radius: 7px; font-size: 13px; font-weight: 500; transition: all .15s;
+  border: 1px solid transparent;
+}
+.btn-primary { background: #2563eb; color: #fff; }
+.btn-primary:hover { background: #1d4ed8; }
+.btn-success { background: #22c55e; color: #fff; }
+.btn-success:hover { background: #16a34a; }
+.btn-danger { background: #ef4444; color: #fff; }
+.btn-danger:hover { background: #dc2626; }
+.btn-warning { background: #f59e0b; color: #fff; }
+.btn-warning:hover { background: #d97706; }
+.btn-outline { background: #fff; border: 1px solid #d1d5db; color: #374151; }
+.btn-outline:hover { background: #f9fafb; border-color: #9ca3af; }
+.btn-sm { padding: 4px 10px; font-size: 12px; border-radius: 5px; }
+.btn-icon { padding: 5px 8px; }
+
+/* ===== TABS ===== */
+.tabs { display: flex; gap: 0; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; }
+.tab-item {
+  padding: 10px 18px; font-size: 13px; font-weight: 500; color: #64748b;
+  cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .15s;
+}
+.tab-item:hover { color: #1e293b; }
+.tab-item.active { color: #2563eb; border-bottom-color: #2563eb; }
+.tab-count {
+  display: inline-block; background: #f1f5f9; color: #64748b;
+  padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 4px;
+}
+.tab-item.active .tab-count { background: #dbeafe; color: #2563eb; }
+
+/* ===== FORM ===== */
+.form-group { margin-bottom: 16px; }
+.form-label { display: block; font-size: 13px; font-weight: 500; color: #374151; margin-bottom: 5px; }
+.form-input, .form-select, .form-textarea {
+  width: 100%; padding: 8px 12px; border: 1px solid #d1d5db; border-radius: 7px;
+  font-size: 13px; transition: border-color .15s; background: #fff;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-hint { font-size: 11px; color: #94a3b8; margin-top: 3px; }
+
+/* Range/Slider */
+.slider-wrap { display: flex; align-items: center; gap: 12px; }
+.slider-wrap input[type=range] { flex: 1; accent-color: #2563eb; }
+.slider-val { font-weight: 600; min-width: 40px; text-align: right; }
+
+/* ===== MODAL ===== */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4);
+  z-index: 200; align-items: flex-start; justify-content: center; padding-top: 40px;
+}
+.modal-overlay.show { display: flex; }
+.modal {
+  background: #fff; border-radius: 12px; width: 680px; max-height: 90vh;
+  overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,.15);
+}
+.modal-header {
+  padding: 18px 24px; border-bottom: 1px solid #e2e8f0;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.modal-header h2 { font-size: 16px; font-weight: 600; }
+.modal-close { font-size: 22px; color: #94a3b8; cursor: pointer; line-height: 1; }
+.modal-close:hover { color: #1e293b; }
+.modal-body { padding: 24px; }
+.modal-footer { padding: 16px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; gap: 10px; }
+
+/* ===== CHARTS (mock SVG) ===== */
+.chart-area { width: 100%; height: 220px; display: flex; align-items: flex-end; gap: 8px; padding: 10px 0; }
+.chart-bar {
+  flex: 1; background: #2563eb; border-radius: 4px 4px 0 0; transition: height .3s; position: relative;
+  min-width: 30px;
+}
+.chart-bar:hover { background: #1d4ed8; }
+.chart-bar .bar-label {
+  position: absolute; bottom: -22px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; color: #64748b; white-space: nowrap;
+}
+.chart-bar .bar-value {
+  position: absolute; top: -20px; left: 50%; transform: translateX(-50%);
+  font-size: 11px; font-weight: 600; color: #1e293b; white-space: nowrap;
+}
+
+/* Pie chart mock */
+.pie-chart-mock { width: 180px; height: 180px; border-radius: 50%; position: relative; margin: 0 auto;
+  background: conic-gradient(#2563eb 0% 30%, #22c55e 30% 50%, #f59e0b 50% 70%, #ef4444 70% 85%, #8b5cf6 85% 100%);
+}
+.pie-legend { display: flex; flex-direction: column; gap: 8px; }
+.pie-legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.pie-legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+/* ===== ALERT ITEMS ===== */
+.alert-item {
+  padding: 12px 16px; border-radius: 8px; margin-bottom: 8px;
+  display: flex; align-items: flex-start; gap: 12px; border: 1px solid #e2e8f0;
+}
+.alert-item.critical { border-left: 3px solid #ef4444; background: #fef2f2; }
+.alert-item.warning { border-left: 3px solid #f59e0b; background: #fffbeb; }
+.alert-item.info { border-left: 3px solid #3b82f6; background: #eff6ff; }
+.alert-severity {
+  font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 4px; flex-shrink: 0;
+}
+.alert-severity.critical { background: #ef4444; color: #fff; }
+.alert-severity.warning { background: #f59e0b; color: #fff; }
+.alert-severity.info { background: #3b82f6; color: #fff; }
+.alert-content { flex: 1; }
+.alert-title { font-weight: 600; font-size: 13px; margin-bottom: 2px; }
+.alert-desc { font-size: 12px; color: #64748b; }
+.alert-time { font-size: 11px; color: #94a3b8; flex-shrink: 0; }
+
+/* ===== PAGINATION ===== */
+.pagination { display: flex; align-items: center; justify-content: space-between; padding: 12px 0; }
+.pagination-info { font-size: 13px; color: #64748b; }
+.pagination-btns { display: flex; gap: 4px; }
+.page-btn {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; color: #374151;
+  cursor: pointer; transition: all .15s;
+}
+.page-btn:hover { background: #f1f5f9; }
+.page-btn.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+
+/* ===== TOOLBAR ===== */
+.toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; gap: 12px; flex-wrap: wrap; }
+.toolbar-left { display: flex; align-items: center; gap: 10px; }
+.toolbar-right { display: flex; align-items: center; gap: 10px; }
+.search-box {
+  display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #d1d5db;
+  border-radius: 7px; padding: 6px 12px;
+}
+.search-box input { border: none; outline: none; font-size: 13px; width: 200px; }
+
+/* ===== SETTLEMENT DETAIL ===== */
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.detail-item .detail-label { font-size: 12px; color: #64748b; margin-bottom: 3px; }
+.detail-item .detail-value { font-size: 14px; font-weight: 600; }
+.countdown { font-size: 24px; font-weight: 700; color: #2563eb; font-variant-numeric: tabular-nums; }
+.reviewer-box {
+  border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; text-align: center;
+}
+.reviewer-box.approved { border-color: #22c55e; background: #f0fdf4; }
+.reviewer-box .reviewer-name { font-weight: 600; margin-bottom: 4px; }
+.reviewer-box .reviewer-status { font-size: 12px; color: #64748b; }
+
+/* ===== RISK ===== */
+.risk-rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.risk-rule-card { border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; }
+.risk-rule-card h4 { font-size: 13px; margin-bottom: 6px; }
+.risk-rule-card p { font-size: 12px; color: #64748b; }
+.toggle-switch { position: relative; width: 40px; height: 22px; display: inline-block; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; background: #cbd5e1; border-radius: 11px; cursor: pointer; transition: .2s;
+}
+.toggle-slider::before {
+  content: ''; position: absolute; width: 16px; height: 16px; left: 3px; bottom: 3px;
+  background: #fff; border-radius: 50%; transition: .2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: #22c55e; }
+.toggle-switch input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+/* ===== DATE PICKER (simplified) ===== */
+.date-range { display: flex; align-items: center; gap: 8px; }
+.date-range input[type=date] { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 13px; }
+
+/* ===== FUNNEL ===== */
+.funnel { display: flex; flex-direction: column; gap: 6px; align-items: center; padding: 20px; }
+.funnel-step {
+  height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; font-weight: 500; transition: width .3s;
+}
+
+/* ===== MM ===== */
+.mm-status-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 16px; margin-bottom: 20px; }
+.capital-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+.capital-bar .fill { height: 100%; border-radius: 4px; }
+
+/* ===== GRID LAYOUT HELPERS ===== */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.grid-3 { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+.mb-20 { margin-bottom: 20px; }
+.mb-16 { margin-bottom: 16px; }
+.text-right { text-align: right; }
+.text-center { text-align: center; }
+.text-muted { color: #64748b; }
+.text-sm { font-size: 12px; }
+.gap-8 { gap: 8px; }
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">T</div>
+    <span>Toobit Admin</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-item active" data-page="dashboard" onclick="switchPage('dashboard', this)">
+      <span class="nav-icon">&#9632;</span> <span>仪表盘</span>
+    </div>
+    <div class="nav-item" data-page="events" onclick="switchPage('events', this)">
+      <span class="nav-icon">&#9881;</span> <span>事件管理</span>
+    </div>
+    <div class="nav-item" data-page="settlement" onclick="switchPage('settlement', this)">
+      <span class="nav-icon">&#9745;</span> <span>结算中心</span>
+    </div>
+    <div class="nav-item" data-page="mm" onclick="switchPage('mm', this)">
+      <span class="nav-icon">&#9733;</span> <span>做市管理</span>
+    </div>
+    <div class="nav-item" data-page="risk" onclick="switchPage('risk', this)">
+      <span class="nav-icon">&#9888;</span> <span>风控监控</span>
+    </div>
+    <div class="nav-item" data-page="analytics" onclick="switchPage('analytics', this)">
+      <span class="nav-icon">&#9776;</span> <span>数据分析</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer">
+    Prediction Market Admin v1.0<br>
+    &copy; 2026 Toobit
+  </div>
+</aside>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-left">
+      <h1 id="page-title">仪表盘</h1>
+    </div>
+    <div class="header-right">
+      <div class="header-bell" title="通知">
+        &#128276;
+        <span class="badge">3</span>
+      </div>
+      <div class="header-user">
+        <div class="header-avatar">A</div>
+        <div class="header-user-info">
+          <div class="header-user-name">Admin</div>
+          <div class="header-user-role">超级管理员</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- ==================== PAGE: DASHBOARD ==================== -->
+    <div class="page active" id="page-dashboard">
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dbeafe;color:#2563eb;">&#9632;</div>
+          <div class="stat-label">活跃事件</div>
+          <div class="stat-value">42</div>
+          <div class="stat-sub up">&#9650; 12% 较上周</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#dcfce7;color:#22c55e;">$</div>
+          <div class="stat-label">24h 交易量</div>
+          <div class="stat-value">$1.2M</div>
+          <div class="stat-sub up">&#9650; 8.3% 较昨日</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fef3c7;color:#f59e0b;">&#9745;</div>
+          <div class="stat-label">待结算</div>
+          <div class="stat-value">5</div>
+          <div class="stat-sub" style="color:#f59e0b;">2 个即将到期</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background:#fee2e2;color:#ef4444;">&#9888;</div>
+          <div class="stat-label">风控告警</div>
+          <div class="stat-value">2</div>
+          <div class="stat-sub down">1 个严重级别</div>
+        </div>
+      </div>
+
+      <!-- Charts Row -->
+      <div class="grid-2 mb-20">
+        <div class="card">
+          <div class="card-header"><h3>近7日交易量趋势</h3></div>
+          <div class="card-body">
+            <div class="chart-area" id="volume-chart"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><h3>事件类别分布</h3></div>
+          <div class="card-body" style="display:flex;align-items:center;gap:30px;">
+            <div class="pie-chart-mock"></div>
+            <div class="pie-legend">
+              <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#2563eb"></div>加密货币 30%</div>
+              <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#22c55e"></div>体育 20%</div>
+              <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#f59e0b"></div>政治 20%</div>
+              <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#ef4444"></div>金融 15%</div>
+              <div class="pie-legend-item"><div class="pie-legend-dot" style="background:#8b5cf6"></div>娱乐 15%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pending Review Table -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <h3>待审核事件</h3>
+          <span class="text-sm text-muted">共 4 项待处理</span>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>标题</th><th>类别</th><th>提交者</th><th>提交时间</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>#1087</td>
+                  <td>BTC 是否在 2026 年 4 月前突破 $120,000?</td>
+                  <td><span class="badge-category badge-cat-crypto">加密货币</span></td>
+                  <td>operator_wang</td>
+                  <td>2026-03-15 14:30</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-success" onclick="alert('已批准')">批准</button>
+                    <button class="btn btn-sm btn-danger" onclick="alert('已拒绝')">拒绝</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1088</td>
+                  <td>2026 年欧冠决赛冠军是否为皇马?</td>
+                  <td><span class="badge-category badge-cat-sports">体育</span></td>
+                  <td>operator_li</td>
+                  <td>2026-03-15 11:20</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-success" onclick="alert('已批准')">批准</button>
+                    <button class="btn btn-sm btn-danger" onclick="alert('已拒绝')">拒绝</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1089</td>
+                  <td>美联储 2026 年 6 月是否降息?</td>
+                  <td><span class="badge-category badge-cat-finance">金融</span></td>
+                  <td>operator_zhang</td>
+                  <td>2026-03-14 18:45</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-success" onclick="alert('已批准')">批准</button>
+                    <button class="btn btn-sm btn-danger" onclick="alert('已拒绝')">拒绝</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1090</td>
+                  <td>2026 年奥斯卡最佳影片是否为科幻片?</td>
+                  <td><span class="badge-category badge-cat-entertainment">娱乐</span></td>
+                  <td>operator_chen</td>
+                  <td>2026-03-14 09:10</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-success" onclick="alert('已批准')">批准</button>
+                    <button class="btn btn-sm btn-danger" onclick="alert('已拒绝')">拒绝</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Alerts -->
+      <div class="card">
+        <div class="card-header"><h3>近期风控告警</h3></div>
+        <div class="card-body">
+          <div class="alert-item critical">
+            <span class="alert-severity critical">严重</span>
+            <div class="alert-content">
+              <div class="alert-title">异常高频交易检测</div>
+              <div class="alert-desc">用户 U-88921 在事件 #1042 上 5 分钟内执行 347 笔交易，触发高频交易告警</div>
+            </div>
+            <div class="alert-time">10 分钟前</div>
+          </div>
+          <div class="alert-item warning">
+            <span class="alert-severity warning">警告</span>
+            <div class="alert-content">
+              <div class="alert-title">持仓限额接近</div>
+              <div class="alert-desc">用户 U-55123 在事件 #1035 持仓已达限额 90%，当前持仓 $45,000</div>
+            </div>
+            <div class="alert-time">32 分钟前</div>
+          </div>
+          <div class="alert-item info">
+            <span class="alert-severity info">信息</span>
+            <div class="alert-content">
+              <div class="alert-title">做市机器人资金不足</div>
+              <div class="alert-desc">事件 #1051 做市机器人可用资金低于阈值，当前余额 $2,340</div>
+            </div>
+            <div class="alert-time">1 小时前</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE: EVENTS ==================== -->
+    <div class="page" id="page-events">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <div class="tabs" id="event-tabs">
+            <div class="tab-item active" onclick="switchTab(this)">全部 <span class="tab-count">86</span></div>
+            <div class="tab-item" onclick="switchTab(this)">草稿 <span class="tab-count">8</span></div>
+            <div class="tab-item" onclick="switchTab(this)">待审核 <span class="tab-count">4</span></div>
+            <div class="tab-item" onclick="switchTab(this)">进行中 <span class="tab-count">42</span></div>
+            <div class="tab-item" onclick="switchTab(this)">结算中 <span class="tab-count">5</span></div>
+            <div class="tab-item" onclick="switchTab(this)">已结算 <span class="tab-count">24</span></div>
+            <div class="tab-item" onclick="switchTab(this)">已作废 <span class="tab-count">3</span></div>
+          </div>
+        </div>
+        <div class="toolbar-right">
+          <div class="search-box">
+            <span>&#128269;</span>
+            <input type="text" placeholder="搜索事件标题或ID...">
+          </div>
+          <button class="btn btn-primary" onclick="openModal('create-event-modal')">+ 新建事件</button>
+        </div>
+      </div>
+
+      <!-- Events Table -->
+      <div class="card">
+        <div class="card-body" style="padding:0;">
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th><th>标题</th><th>类别</th><th>状态</th><th>交易量</th><th>创建者</th><th>创建时间</th><th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>#1042</td>
+                  <td>BTC 2026 年底前是否突破 $150,000?</td>
+                  <td><span class="badge-category badge-cat-crypto">加密货币</span></td>
+                  <td><span class="badge-pill badge-active">进行中</span></td>
+                  <td>$285,420</td>
+                  <td>admin</td>
+                  <td>2026-03-01</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openModal('event-detail-modal')">详情</button>
+                    <button class="btn btn-sm btn-warning">暂停</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1035</td>
+                  <td>ETH 是否在 Q2 突破 $5,000?</td>
+                  <td><span class="badge-category badge-cat-crypto">加密货币</span></td>
+                  <td><span class="badge-pill badge-active">进行中</span></td>
+                  <td>$198,750</td>
+                  <td>operator_wang</td>
+                  <td>2026-02-20</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openModal('event-detail-modal')">详情</button>
+                    <button class="btn btn-sm btn-warning">暂停</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1051</td>
+                  <td>2026 年世界杯决赛参赛队伍是否包含巴西?</td>
+                  <td><span class="badge-category badge-cat-sports">体育</span></td>
+                  <td><span class="badge-pill badge-active">进行中</span></td>
+                  <td>$156,300</td>
+                  <td>operator_li</td>
+                  <td>2026-03-05</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openModal('event-detail-modal')">详情</button>
+                    <button class="btn btn-sm btn-warning">暂停</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1060</td>
+                  <td>美国 2026 年 Q2 GDP 增长是否超过 3%?</td>
+                  <td><span class="badge-category badge-cat-finance">金融</span></td>
+                  <td><span class="badge-pill badge-settling">结算中</span></td>
+                  <td>$132,800</td>
+                  <td>operator_zhang</td>
+                  <td>2026-02-10</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openModal('event-detail-modal')">详情</button>
+                    <button class="btn btn-sm btn-primary">结算</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1020</td>
+                  <td>2026 年格莱美年度专辑是否为流行类?</td>
+                  <td><span class="badge-category badge-cat-entertainment">娱乐</span></td>
+                  <td><span class="badge-pill badge-settled">已结算</span></td>
+                  <td>$89,200</td>
+                  <td>admin</td>
+                  <td>2026-01-15</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openModal('event-detail-modal')">详情</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1088</td>
+                  <td>2026 年欧冠决赛冠军是否为皇马?</td>
+                  <td><span class="badge-category badge-cat-sports">体育</span></td>
+                  <td><span class="badge-pill badge-pending">待审核</span></td>
+                  <td>-</td>
+                  <td>operator_li</td>
+                  <td>2026-03-15</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openModal('event-detail-modal')">详情</button>
+                    <button class="btn btn-sm btn-success">批准</button>
+                    <button class="btn btn-sm btn-danger">拒绝</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1091</td>
+                  <td>特斯拉 2026 年 Q2 交付量是否超 50 万辆?</td>
+                  <td><span class="badge-category badge-cat-finance">金融</span></td>
+                  <td><span class="badge-pill badge-draft">草稿</span></td>
+                  <td>-</td>
+                  <td>operator_chen</td>
+                  <td>2026-03-16</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openModal('event-detail-modal')">详情</button>
+                    <button class="btn btn-sm btn-primary">编辑</button>
+                  </td>
+                </tr>
+                <tr>
+                  <td>#1005</td>
+                  <td>Solana 是否在 2026 年上半年超越 ETH 日交易量?</td>
+                  <td><span class="badge-category badge-cat-crypto">加密货币</span></td>
+                  <td><span class="badge-pill badge-void">已作废</span></td>
+                  <td>$12,500</td>
+                  <td>admin</td>
+                  <td>2026-01-02</td>
+                  <td class="table-actions">
+                    <button class="btn btn-sm btn-outline" onclick="openModal('event-detail-modal')">详情</button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="pagination" style="padding:12px 20px;">
+            <div class="pagination-info">显示 1-8 共 86 条</div>
+            <div class="pagination-btns">
+              <div class="page-btn">&laquo;</div>
+              <div class="page-btn active">1</div>
+              <div class="page-btn">2</div>
+              <div class="page-btn">3</div>
+              <div class="page-btn">...</div>
+              <div class="page-btn">11</div>
+              <div class="page-btn">&raquo;</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE: SETTLEMENT ==================== -->
+    <div class="page" id="page-settlement">
+      <div class="tabs mb-16">
+        <div class="tab-item active" onclick="switchTab(this)">待结算 <span class="tab-count">5</span></div>
+        <div class="tab-item" onclick="switchTab(this)">结算历史 <span class="tab-count">24</span></div>
+      </div>
+
+      <div class="grid-3">
+        <!-- Left: table -->
+        <div>
+          <div class="card mb-20">
+            <div class="card-header"><h3>待结算事件</h3></div>
+            <div class="card-body" style="padding:0;">
+              <table>
+                <thead>
+                  <tr><th>事件</th><th>到期时间</th><th>结算类型</th><th>状态</th><th>操作</th></tr>
+                </thead>
+                <tbody>
+                  <tr onclick="showSettlementDetail(this)" style="cursor:pointer" class="selected-row" id="settle-row-1">
+                    <td>#1060 美国 Q2 GDP</td>
+                    <td>2026-03-18 00:00</td>
+                    <td>自动</td>
+                    <td><span class="badge-pill badge-settling">数据确认中</span></td>
+                    <td><button class="btn btn-sm btn-primary">处理</button></td>
+                  </tr>
+                  <tr onclick="showSettlementDetail(this)" style="cursor:pointer">
+                    <td>#1058 美联储加息</td>
+                    <td>2026-03-20 00:00</td>
+                    <td>手动</td>
+                    <td><span class="badge-pill badge-pending">待提交结果</span></td>
+                    <td><button class="btn btn-sm btn-primary">处理</button></td>
+                  </tr>
+                  <tr onclick="showSettlementDetail(this)" style="cursor:pointer">
+                    <td>#1055 苹果发布会</td>
+                    <td>2026-03-22 00:00</td>
+                    <td>手动</td>
+                    <td><span class="badge-pill badge-pending">审核中</span></td>
+                    <td><button class="btn btn-sm btn-primary">处理</button></td>
+                  </tr>
+                  <tr onclick="showSettlementDetail(this)" style="cursor:pointer">
+                    <td>#1048 NBA MVP</td>
+                    <td>2026-03-25 00:00</td>
+                    <td>手动</td>
+                    <td><span class="badge-pill badge-settling">冷却期</span></td>
+                    <td><button class="btn btn-sm btn-outline">查看</button></td>
+                  </tr>
+                  <tr onclick="showSettlementDetail(this)" style="cursor:pointer">
+                    <td>#1045 原油价格</td>
+                    <td>2026-03-28 00:00</td>
+                    <td>自动</td>
+                    <td><span class="badge-pill badge-pending">等待数据</span></td>
+                    <td><button class="btn btn-sm btn-outline">查看</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: detail panel -->
+        <div>
+          <div class="card" id="settlement-detail">
+            <div class="card-header"><h3>结算详情 - #1060</h3></div>
+            <div class="card-body">
+              <div class="detail-grid mb-20">
+                <div class="detail-item">
+                  <div class="detail-label">事件标题</div>
+                  <div class="detail-value">美国 2026 年 Q2 GDP 增长是否超过 3%?</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">结算类型</div>
+                  <div class="detail-value">自动 (数据源: BEA API)</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">交易量</div>
+                  <div class="detail-value">$132,800</div>
+                </div>
+                <div class="detail-item">
+                  <div class="detail-label">参与人数</div>
+                  <div class="detail-value">1,245</div>
+                </div>
+              </div>
+
+              <h4 style="font-size:14px;margin-bottom:10px;">数据源结果</h4>
+              <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:14px;margin-bottom:16px;">
+                <div style="font-size:13px;color:#64748b;margin-bottom:4px;">BEA GDP Advance Estimate</div>
+                <div style="font-size:20px;font-weight:700;color:#22c55e;">3.2% (YES)</div>
+                <div style="font-size:12px;color:#94a3b8;margin-top:4px;">数据获取时间: 2026-03-16 08:30 UTC</div>
+              </div>
+
+              <h4 style="font-size:14px;margin-bottom:10px;">双人审核</h4>
+              <div style="display:flex;gap:12px;margin-bottom:16px;">
+                <div class="reviewer-box approved" style="flex:1;">
+                  <div class="reviewer-name">审核人 1: 张明</div>
+                  <div class="reviewer-status" style="color:#22c55e;font-weight:600;">&#10003; 已确认 YES</div>
+                  <div style="font-size:11px;color:#94a3b8;margin-top:4px;">2026-03-16 09:15</div>
+                </div>
+                <div class="reviewer-box" style="flex:1;">
+                  <div class="reviewer-name">审核人 2: 李强</div>
+                  <div class="reviewer-status">&#9203; 待确认</div>
+                </div>
+              </div>
+
+              <h4 style="font-size:14px;margin-bottom:10px;">冷却倒计时</h4>
+              <div class="countdown" id="cooldown-timer">23:45:12</div>
+              <div class="text-sm text-muted mb-20">结算将在冷却期结束后执行</div>
+
+              <div style="display:flex;gap:10px;">
+                <button class="btn btn-success" onclick="alert('结算已执行')">执行结算</button>
+                <button class="btn btn-danger" onclick="alert('结算已撤回')">撤回结算</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE: MARKET MAKING ==================== -->
+    <div class="page" id="page-mm">
+      <!-- MM Stats -->
+      <div class="mm-status-grid">
+        <div class="stat-card">
+          <div class="stat-label">运行中机器人</div>
+          <div class="stat-value">18</div>
+          <div class="stat-sub">共 42 个事件</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">总资金池</div>
+          <div class="stat-value">$520K</div>
+          <div class="stat-sub">已用: 68%</div>
+          <div class="capital-bar"><div class="fill" style="width:68%;background:#2563eb;"></div></div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">净敞口</div>
+          <div class="stat-value">$23.5K</div>
+          <div class="stat-sub warning" style="color:#f59e0b;">偏多 YES 方向</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">今日盈亏</div>
+          <div class="stat-value" style="color:#22c55e;">+$8,420</div>
+          <div class="stat-sub up">&#9650; 利润率 1.6%</div>
+        </div>
+      </div>
+
+      <!-- MM Config Table -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <h3>做市配置</h3>
+          <div style="display:flex;gap:8px;">
+            <div class="search-box"><span>&#128269;</span><input placeholder="搜索事件..."></div>
+            <button class="btn btn-outline">批量调整</button>
+          </div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table>
+            <thead>
+              <tr><th>事件</th><th>当前价格</th><th>价差</th><th>深度/档</th><th>最大敞口</th><th>偏斜</th><th>状态</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>#1042 BTC $150K</td>
+                <td>YES 0.62 / NO 0.38</td>
+                <td>2.0%</td>
+                <td>$5,000</td>
+                <td>$50,000</td>
+                <td>0.00</td>
+                <td><span class="badge-pill badge-active">运行中</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-outline" onclick="openModal('mm-edit-modal')">配置</button>
+                  <button class="btn btn-sm btn-danger">停止</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#1035 ETH $5K</td>
+                <td>YES 0.45 / NO 0.55</td>
+                <td>2.5%</td>
+                <td>$3,000</td>
+                <td>$30,000</td>
+                <td>-0.02</td>
+                <td><span class="badge-pill badge-active">运行中</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-outline" onclick="openModal('mm-edit-modal')">配置</button>
+                  <button class="btn btn-sm btn-danger">停止</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#1051 巴西世界杯</td>
+                <td>YES 0.33 / NO 0.67</td>
+                <td>3.0%</td>
+                <td>$2,000</td>
+                <td>$20,000</td>
+                <td>+0.01</td>
+                <td><span class="badge-pill badge-active">运行中</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-outline" onclick="openModal('mm-edit-modal')">配置</button>
+                  <button class="btn btn-sm btn-danger">停止</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#1060 美国 GDP</td>
+                <td>YES 0.71 / NO 0.29</td>
+                <td>1.5%</td>
+                <td>$4,000</td>
+                <td>$40,000</td>
+                <td>+0.03</td>
+                <td><span class="badge-pill badge-pending" style="background:#fee2e2;color:#991b1b;">已暂停</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-outline" onclick="openModal('mm-edit-modal')">配置</button>
+                  <button class="btn btn-sm btn-success">启动</button>
+                </td>
+              </tr>
+              <tr>
+                <td>#1055 苹果发布会</td>
+                <td>YES 0.58 / NO 0.42</td>
+                <td>2.0%</td>
+                <td>$3,500</td>
+                <td>$35,000</td>
+                <td>0.00</td>
+                <td><span class="badge-pill badge-active">运行中</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-outline" onclick="openModal('mm-edit-modal')">配置</button>
+                  <button class="btn btn-sm btn-danger">停止</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Capital Pool -->
+      <div class="card">
+        <div class="card-header"><h3>资金池管理</h3></div>
+        <div class="card-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <div class="detail-label">总资金</div>
+              <div class="detail-value">$520,000</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">已分配</div>
+              <div class="detail-value">$353,600</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">可用余额</div>
+              <div class="detail-value" style="color:#22c55e;">$166,400</div>
+            </div>
+            <div class="detail-item">
+              <div class="detail-label">锁定保证金</div>
+              <div class="detail-value">$89,200</div>
+            </div>
+          </div>
+          <div style="margin-top:16px;display:flex;gap:10px;">
+            <button class="btn btn-primary">充值资金</button>
+            <button class="btn btn-outline">提取资金</button>
+            <button class="btn btn-outline">资金流水</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE: RISK ==================== -->
+    <div class="page" id="page-risk">
+      <div class="grid-2 mb-20">
+        <!-- Active Alerts -->
+        <div class="card">
+          <div class="card-header">
+            <h3>活跃告警</h3>
+            <span class="badge-pill badge-void">4 条未处理</span>
+          </div>
+          <div class="card-body">
+            <div class="alert-item critical">
+              <span class="alert-severity critical">严重</span>
+              <div class="alert-content">
+                <div class="alert-title">价格操纵嫌疑</div>
+                <div class="alert-desc">事件 #1042: 检测到多账户协同交易行为，涉及 5 个关联账户</div>
+              </div>
+              <div class="alert-time">5 分钟前</div>
+            </div>
+            <div class="alert-item critical">
+              <span class="alert-severity critical">严重</span>
+              <div class="alert-content">
+                <div class="alert-title">高频交易检测</div>
+                <div class="alert-desc">用户 U-88921 在 #1042 上 5 分钟内执行 347 笔交易</div>
+              </div>
+              <div class="alert-time">10 分钟前</div>
+            </div>
+            <div class="alert-item warning">
+              <span class="alert-severity warning">警告</span>
+              <div class="alert-content">
+                <div class="alert-title">持仓限额突破</div>
+                <div class="alert-desc">用户 U-55123 在 #1035 持仓 $45,000，超过限额 90%</div>
+              </div>
+              <div class="alert-time">32 分钟前</div>
+            </div>
+            <div class="alert-item warning">
+              <span class="alert-severity warning">警告</span>
+              <div class="alert-content">
+                <div class="alert-title">熔断触发预警</div>
+                <div class="alert-desc">事件 #1051 价格在 10 分钟内波动 15%，接近熔断阈值</div>
+              </div>
+              <div class="alert-time">1 小时前</div>
+            </div>
+            <div class="alert-item info">
+              <span class="alert-severity info">信息</span>
+              <div class="alert-content">
+                <div class="alert-title">异常登录</div>
+                <div class="alert-desc">用户 U-33456 从新 IP 地址登录，地理位置变更</div>
+              </div>
+              <div class="alert-time">2 小时前</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Circuit Breakers -->
+        <div class="card">
+          <div class="card-header"><h3>熔断状态</h3></div>
+          <div class="card-body">
+            <table>
+              <thead><tr><th>事件</th><th>波动率</th><th>阈值</th><th>状态</th></tr></thead>
+              <tbody>
+                <tr>
+                  <td>#1042 BTC $150K</td>
+                  <td>8.2%</td>
+                  <td>20%</td>
+                  <td><span class="badge-pill badge-active">正常</span></td>
+                </tr>
+                <tr>
+                  <td>#1035 ETH $5K</td>
+                  <td>5.1%</td>
+                  <td>20%</td>
+                  <td><span class="badge-pill badge-active">正常</span></td>
+                </tr>
+                <tr>
+                  <td>#1051 巴西世界杯</td>
+                  <td>15.3%</td>
+                  <td>20%</td>
+                  <td><span class="badge-pill badge-pending">预警</span></td>
+                </tr>
+                <tr>
+                  <td>#1060 美国 GDP</td>
+                  <td>2.4%</td>
+                  <td>20%</td>
+                  <td><span class="badge-pill badge-active">正常</span></td>
+                </tr>
+                <tr>
+                  <td>#1055 苹果发布会</td>
+                  <td>6.8%</td>
+                  <td>20%</td>
+                  <td><span class="badge-pill badge-active">正常</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- User Risk Table -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <h3>用户风险监控</h3>
+          <div class="search-box"><span>&#128269;</span><input placeholder="搜索用户ID..."></div>
+        </div>
+        <div class="card-body" style="padding:0;">
+          <table>
+            <thead>
+              <tr><th>用户 ID</th><th>总持仓</th><th>今日盈亏</th><th>告警次数</th><th>风险等级</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>U-88921</td>
+                <td>$38,500</td>
+                <td style="color:#22c55e;">+$4,200</td>
+                <td>7</td>
+                <td><span class="alert-severity critical">高危</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-warning">限制</button>
+                  <button class="btn btn-sm btn-danger">封禁</button>
+                  <button class="btn btn-sm btn-outline">详情</button>
+                </td>
+              </tr>
+              <tr>
+                <td>U-55123</td>
+                <td>$45,000</td>
+                <td style="color:#ef4444;">-$2,800</td>
+                <td>3</td>
+                <td><span class="alert-severity warning">中危</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-warning">限制</button>
+                  <button class="btn btn-sm btn-danger">封禁</button>
+                  <button class="btn btn-sm btn-outline">详情</button>
+                </td>
+              </tr>
+              <tr>
+                <td>U-33456</td>
+                <td>$12,300</td>
+                <td style="color:#22c55e;">+$890</td>
+                <td>1</td>
+                <td><span class="alert-severity info">低危</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-warning">限制</button>
+                  <button class="btn btn-sm btn-danger">封禁</button>
+                  <button class="btn btn-sm btn-outline">详情</button>
+                </td>
+              </tr>
+              <tr>
+                <td>U-77654</td>
+                <td>$28,100</td>
+                <td style="color:#ef4444;">-$5,400</td>
+                <td>4</td>
+                <td><span class="alert-severity warning">中危</span></td>
+                <td class="table-actions">
+                  <button class="btn btn-sm btn-warning">限制</button>
+                  <button class="btn btn-sm btn-danger">封禁</button>
+                  <button class="btn btn-sm btn-outline">详情</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Risk Rules -->
+      <div class="card">
+        <div class="card-header"><h3>风控规则配置</h3></div>
+        <div class="card-body">
+          <div class="risk-rules-grid">
+            <div class="risk-rule-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <h4>高频交易检测</h4>
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </div>
+              <p>5 分钟内交易次数 > 100 触发告警</p>
+              <div style="margin-top:8px;"><button class="btn btn-sm btn-outline">编辑规则</button></div>
+            </div>
+            <div class="risk-rule-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <h4>持仓限额监控</h4>
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </div>
+              <p>单事件持仓超过 $50,000 触发限制</p>
+              <div style="margin-top:8px;"><button class="btn btn-sm btn-outline">编辑规则</button></div>
+            </div>
+            <div class="risk-rule-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <h4>价格操纵检测</h4>
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </div>
+              <p>关联账户协同交易检测，阈值: 3 个账户</p>
+              <div style="margin-top:8px;"><button class="btn btn-sm btn-outline">编辑规则</button></div>
+            </div>
+            <div class="risk-rule-card">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                <h4>熔断机制</h4>
+                <label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label>
+              </div>
+              <p>10 分钟内价格波动 > 20% 自动暂停交易</p>
+              <div style="margin-top:8px;"><button class="btn btn-sm btn-outline">编辑规则</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE: ANALYTICS ==================== -->
+    <div class="page" id="page-analytics">
+      <!-- Date Range & Export -->
+      <div class="toolbar mb-16">
+        <div class="toolbar-left">
+          <div class="date-range">
+            <input type="date" value="2026-03-09">
+            <span>至</span>
+            <input type="date" value="2026-03-16">
+          </div>
+          <button class="btn btn-outline" onclick="this.textContent='已刷新'; setTimeout(()=>this.textContent='刷新数据',1000)">刷新数据</button>
+        </div>
+        <div class="toolbar-right">
+          <button class="btn btn-outline" onclick="alert('导出 CSV 文件')">&#128190; 导出 CSV</button>
+          <button class="btn btn-outline" onclick="alert('导出 PDF 报表')">&#128196; 导出 PDF</button>
+        </div>
+      </div>
+
+      <!-- Key Metrics -->
+      <div class="stats-row mb-20">
+        <div class="stat-card">
+          <div class="stat-label">日活用户 (DAU)</div>
+          <div class="stat-value">3,842</div>
+          <div class="stat-sub up">&#9650; 5.2% 较上周</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">日交易量</div>
+          <div class="stat-value">$1.2M</div>
+          <div class="stat-sub up">&#9650; 8.3% 较上周</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">手续费收入</div>
+          <div class="stat-value">$24,600</div>
+          <div class="stat-sub up">&#9650; 12.1% 较上周</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">新增用户</div>
+          <div class="stat-value">186</div>
+          <div class="stat-sub down">&#9660; 3.1% 较上周</div>
+        </div>
+      </div>
+
+      <div class="grid-2 mb-20">
+        <!-- Volume Chart -->
+        <div class="card">
+          <div class="card-header"><h3>交易量趋势 (7日)</h3></div>
+          <div class="card-body">
+            <div class="chart-area" id="analytics-volume-chart"></div>
+          </div>
+        </div>
+
+        <!-- Funnel -->
+        <div class="card">
+          <div class="card-header"><h3>用户转化漏斗</h3></div>
+          <div class="card-body">
+            <div class="funnel">
+              <div class="funnel-step" style="width:100%;background:#2563eb;">访问用户: 12,450</div>
+              <div class="funnel-step" style="width:72%;background:#3b82f6;">注册用户: 8,964 (72%)</div>
+              <div class="funnel-step" style="width:45%;background:#60a5fa;">入金用户: 5,603 (45%)</div>
+              <div class="funnel-step" style="width:31%;background:#93c5fd;">交易用户: 3,860 (31%)</div>
+              <div class="funnel-step" style="width:18%;background:#bfdbfe;color:#1e40af;">活跃交易: 2,241 (18%)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top Events Table -->
+      <div class="card">
+        <div class="card-header"><h3>热门事件排行</h3></div>
+        <div class="card-body" style="padding:0;">
+          <table>
+            <thead>
+              <tr><th>排名</th><th>事件</th><th>类别</th><th>交易量</th><th>参与人数</th><th>YES 价格</th><th>24h 变化</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>1</strong></td>
+                <td>BTC 2026 年底前是否突破 $150,000?</td>
+                <td><span class="badge-category badge-cat-crypto">加密货币</span></td>
+                <td>$285,420</td>
+                <td>2,340</td>
+                <td>0.62</td>
+                <td style="color:#22c55e;">+3.2%</td>
+              </tr>
+              <tr>
+                <td><strong>2</strong></td>
+                <td>ETH 是否在 Q2 突破 $5,000?</td>
+                <td><span class="badge-category badge-cat-crypto">加密货币</span></td>
+                <td>$198,750</td>
+                <td>1,856</td>
+                <td>0.45</td>
+                <td style="color:#ef4444;">-1.8%</td>
+              </tr>
+              <tr>
+                <td><strong>3</strong></td>
+                <td>2026 年世界杯决赛参赛队伍是否包含巴西?</td>
+                <td><span class="badge-category badge-cat-sports">体育</span></td>
+                <td>$156,300</td>
+                <td>1,520</td>
+                <td>0.33</td>
+                <td style="color:#ef4444;">-5.1%</td>
+              </tr>
+              <tr>
+                <td><strong>4</strong></td>
+                <td>美国 2026 年 Q2 GDP 增长是否超过 3%?</td>
+                <td><span class="badge-category badge-cat-finance">金融</span></td>
+                <td>$132,800</td>
+                <td>1,245</td>
+                <td>0.71</td>
+                <td style="color:#22c55e;">+2.5%</td>
+              </tr>
+              <tr>
+                <td><strong>5</strong></td>
+                <td>2026 年 WWDC 是否发布 AR 眼镜?</td>
+                <td><span class="badge-category badge-cat-entertainment">娱乐</span></td>
+                <td>$98,400</td>
+                <td>980</td>
+                <td>0.58</td>
+                <td style="color:#22c55e;">+1.2%</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- ==================== MODAL: CREATE EVENT ==================== -->
+<div class="modal-overlay" id="create-event-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>新建预测事件</h2>
+      <span class="modal-close" onclick="closeModal('create-event-modal')">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">事件标题 (中文) *</label>
+          <input class="form-input" type="text" placeholder="例: BTC 是否在 2026 年突破 $150,000?">
+        </div>
+        <div class="form-group">
+          <label class="form-label">事件标题 (英文) *</label>
+          <input class="form-input" type="text" placeholder="e.g. Will BTC hit $150K in 2026?">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">类别 *</label>
+          <select class="form-select">
+            <option value="">请选择类别</option>
+            <option>加密货币</option>
+            <option>体育</option>
+            <option>政治</option>
+            <option>金融</option>
+            <option>娱乐</option>
+            <option>科技</option>
+            <option>其他</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">结算方式 *</label>
+          <select class="form-select">
+            <option>自动 (数据源)</option>
+            <option>手动 (人工判定)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">事件描述 / 规则 *</label>
+        <textarea class="form-textarea" rows="3" placeholder="详细描述事件的判定规则和结算条件..."></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">数据源配置</label>
+        <input class="form-input" type="text" placeholder="例: CoinGecko API - BTC/USD price endpoint">
+        <div class="form-hint">仅自动结算事件需要配置数据源</div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">交易开始时间 *</label>
+          <input class="form-input" type="datetime-local" value="2026-03-16T12:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">交易结束时间 *</label>
+          <input class="form-input" type="datetime-local" value="2026-06-30T00:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">初始 YES 概率</label>
+        <div class="slider-wrap">
+          <input type="range" min="5" max="95" value="50" oninput="this.nextElementSibling.textContent=this.value+'%'">
+          <span class="slider-val">50%</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">最大持仓限额 ($)</label>
+        <input class="form-input" type="number" placeholder="50000" value="50000">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('create-event-modal')">取消</button>
+      <button class="btn btn-outline" onclick="alert('已保存为草稿');closeModal('create-event-modal')">保存草稿</button>
+      <button class="btn btn-primary" onclick="alert('已提交审核');closeModal('create-event-modal')">提交审核</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: EVENT DETAIL ==================== -->
+<div class="modal-overlay" id="event-detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>事件详情 - #1042</h2>
+      <span class="modal-close" onclick="closeModal('event-detail-modal')">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="detail-grid mb-20">
+        <div class="detail-item">
+          <div class="detail-label">标题 (中)</div>
+          <div class="detail-value">BTC 2026 年底前是否突破 $150,000?</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">标题 (EN)</div>
+          <div class="detail-value">Will BTC hit $150K by end of 2026?</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">类别</div>
+          <div class="detail-value"><span class="badge-category badge-cat-crypto">加密货币</span></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">状态</div>
+          <div class="detail-value"><span class="badge-pill badge-active">进行中</span></div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">结算方式</div>
+          <div class="detail-value">自动 (CoinGecko API)</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">创建者</div>
+          <div class="detail-value">admin</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">交易时间</div>
+          <div class="detail-value">2026-03-01 ~ 2026-12-31</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">最大持仓</div>
+          <div class="detail-value">$50,000</div>
+        </div>
+      </div>
+
+      <h4 style="font-size:14px;margin-bottom:8px;">交易数据</h4>
+      <div class="detail-grid mb-20" style="background:#f8fafc;padding:14px;border-radius:8px;">
+        <div class="detail-item">
+          <div class="detail-label">总交易量</div>
+          <div class="detail-value">$285,420</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">参与用户</div>
+          <div class="detail-value">2,340</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">当前 YES 价格</div>
+          <div class="detail-value" style="color:#2563eb;">0.62</div>
+        </div>
+        <div class="detail-item">
+          <div class="detail-label">24h 交易量</div>
+          <div class="detail-value">$42,350</div>
+        </div>
+      </div>
+
+      <h4 style="font-size:14px;margin-bottom:8px;">事件描述</h4>
+      <div style="background:#f8fafc;padding:14px;border-radius:8px;font-size:13px;color:#475569;line-height:1.6;">
+        判定规则: 若 BTC/USD 现货价格在 2026 年 12 月 31 日 23:59 UTC 之前的任意时刻触及或超过 $150,000 (以 CoinGecko API 数据为准)，则结算结果为 YES。否则结算结果为 NO。数据源: CoinGecko BTC/USD spot price API。
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('event-detail-modal')">关闭</button>
+      <button class="btn btn-warning">暂停交易</button>
+      <button class="btn btn-primary">编辑事件</button>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MODAL: MM EDIT ==================== -->
+<div class="modal-overlay" id="mm-edit-modal">
+  <div class="modal" style="width:520px;">
+    <div class="modal-header">
+      <h2>做市参数配置</h2>
+      <span class="modal-close" onclick="closeModal('mm-edit-modal')">&times;</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">基准价格</label>
+        <input class="form-input" type="number" step="0.01" value="0.62">
+        <div class="form-hint">YES 方基准价格 (0.01 ~ 0.99)</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">价差 (Spread)</label>
+        <div class="slider-wrap">
+          <input type="range" min="5" max="100" value="20" oninput="this.nextElementSibling.textContent=(this.value/10).toFixed(1)+'%'">
+          <span class="slider-val">2.0%</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">每档深度 ($)</label>
+        <input class="form-input" type="number" value="5000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">最大敞口 ($)</label>
+        <input class="form-input" type="number" value="50000">
+      </div>
+      <div class="form-group">
+        <label class="form-label">报价更新间隔 (秒)</label>
+        <input class="form-input" type="number" value="5">
+      </div>
+      <div class="form-group">
+        <label class="form-label">偏斜系数 (Skew)</label>
+        <div class="slider-wrap">
+          <input type="range" min="-100" max="100" value="0" oninput="this.nextElementSibling.textContent=(this.value/1000).toFixed(3)">
+          <span class="slider-val">0.000</span>
+        </div>
+        <div class="form-hint">正值偏向 YES 方，负值偏向 NO 方</div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('mm-edit-modal')">取消</button>
+      <button class="btn btn-primary" onclick="alert('参数已保存');closeModal('mm-edit-modal')">保存配置</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===== PAGE NAVIGATION =====
+const pageTitles = {
+  dashboard: '仪表盘',
+  events: '事件管理',
+  settlement: '结算中心',
+  mm: '做市管理',
+  risk: '风控监控',
+  analytics: '数据分析'
+};
+
+function switchPage(pageId, navEl) {
+  // Update nav
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  if (navEl) navEl.classList.add('active');
+  // Update pages
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const page = document.getElementById('page-' + pageId);
+  if (page) page.classList.add('active');
+  // Update title
+  document.getElementById('page-title').textContent = pageTitles[pageId] || pageId;
+}
+
+// ===== TABS =====
+function switchTab(el) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ===== MODALS =====
+function openModal(id) {
+  document.getElementById(id).classList.add('show');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+// Close modal on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('show');
+  });
+});
+
+// ===== CHARTS: Bar chart =====
+function renderBarChart(containerId, data) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  const maxVal = Math.max(...data.map(d => d.value));
+  data.forEach(d => {
+    const pct = (d.value / maxVal * 100);
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar';
+    bar.style.height = pct + '%';
+    bar.innerHTML = '<span class="bar-value">$' + (d.value / 1000).toFixed(0) + 'K</span><span class="bar-label">' + d.label + '</span>';
+    container.appendChild(bar);
+  });
+}
+
+const volumeData = [
+  { label: '03/10', value: 980000 },
+  { label: '03/11', value: 1120000 },
+  { label: '03/12', value: 1050000 },
+  { label: '03/13', value: 1340000 },
+  { label: '03/14', value: 1180000 },
+  { label: '03/15', value: 1250000 },
+  { label: '03/16', value: 1200000 }
+];
+
+renderBarChart('volume-chart', volumeData);
+renderBarChart('analytics-volume-chart', volumeData);
+
+// ===== COOLDOWN TIMER =====
+let cooldownSeconds = 23 * 3600 + 45 * 60 + 12;
+function updateCooldown() {
+  const h = Math.floor(cooldownSeconds / 3600);
+  const m = Math.floor((cooldownSeconds % 3600) / 60);
+  const s = cooldownSeconds % 60;
+  const el = document.getElementById('cooldown-timer');
+  if (el) el.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  if (cooldownSeconds > 0) cooldownSeconds--;
+}
+setInterval(updateCooldown, 1000);
+
+// ===== SETTLEMENT DETAIL SELECTION =====
+function showSettlementDetail(row) {
+  document.querySelectorAll('#page-settlement tbody tr').forEach(r => r.style.background = '');
+  row.style.background = '#eff6ff';
+}
+
+// ===== KEYBOARD SHORTCUT =====
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.show').forEach(m => m.classList.remove('show'));
+  }
+});
+</script>
+</body>
+</html>

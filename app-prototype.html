@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toobit Prediction Market - Mobile Prototype</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { background: #1a1a2e; display: flex; justify-content: center; align-items: center; min-height: 100vh; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+
+  /* Device Frame */
+  .device-frame {
+    width: 390px; height: 844px; background: #0d0d0d; border-radius: 44px; position: relative;
+    overflow: hidden; box-shadow: 0 0 0 3px #2a2a3a, 0 0 0 6px #111, 0 20px 60px rgba(0,0,0,0.6);
+  }
+  .notch {
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 160px; height: 34px;
+    background: #000; border-radius: 0 0 20px 20px; z-index: 1000;
+  }
+  .status-bar {
+    position: absolute; top: 0; left: 0; right: 0; height: 54px; z-index: 999;
+    display: flex; justify-content: space-between; align-items: center; padding: 10px 24px 0;
+    color: #fff; font-size: 14px; font-weight: 600;
+  }
+  .status-bar .time { margin-left: 4px; }
+  .status-bar .icons { display: flex; gap: 6px; align-items: center; font-size: 12px; }
+  .home-indicator {
+    position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%);
+    width: 134px; height: 5px; background: rgba(255,255,255,0.3); border-radius: 3px; z-index: 1000;
+  }
+
+  /* App Container */
+  .app-container {
+    position: absolute; top: 54px; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+
+  /* Screens */
+  .screen {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; flex-direction: column; overflow: hidden;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.35s ease;
+    background: #0d0d0d;
+  }
+  .screen.hidden { display: none; }
+  .screen.slide-out-left { transform: translateX(-30%); opacity: 0.5; }
+  .screen.slide-in-right { transform: translateX(100%); }
+  .screen.slide-out-right { transform: translateX(100%); opacity: 1; }
+
+  /* Bottom Tab Bar */
+  .tab-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 82px;
+    background: linear-gradient(to top, #0d0d0d 70%, rgba(13,13,13,0.95));
+    display: flex; justify-content: space-around; align-items: flex-start; padding-top: 10px;
+    border-top: 1px solid rgba(255,255,255,0.06); z-index: 100;
+  }
+  .tab-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer;
+    padding: 4px 16px; border-radius: 8px; transition: all 0.2s;
+  }
+  .tab-item svg { width: 24px; height: 24px; fill: #666; transition: fill 0.2s; }
+  .tab-item span { font-size: 10px; color: #666; transition: color 0.2s; }
+  .tab-item.active svg { fill: #3B82F6; }
+  .tab-item.active span { color: #3B82F6; }
+
+  /* Scrollable Content */
+  .scroll-content {
+    flex: 1; overflow-y: auto; padding-bottom: 90px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .scroll-content::-webkit-scrollbar { display: none; }
+
+  /* Screen Header */
+  .screen-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; min-height: 48px; flex-shrink: 0;
+  }
+  .screen-header h1 { font-size: 20px; color: #fff; font-weight: 700; }
+  .screen-header .header-icons { display: flex; gap: 16px; }
+  .screen-header .header-icons svg { width: 22px; height: 22px; fill: #999; cursor: pointer; }
+  .header-icons svg:active { fill: #fff; }
+
+  /* Category Pills */
+  .category-pills {
+    display: flex; gap: 8px; padding: 8px 16px 12px; overflow-x: auto; flex-shrink: 0;
+  }
+  .category-pills::-webkit-scrollbar { display: none; }
+  .pill {
+    flex-shrink: 0; padding: 8px 16px; border-radius: 20px; font-size: 13px;
+    background: #1a1a2e; color: #999; cursor: pointer; transition: all 0.2s;
+    border: 1px solid transparent; white-space: nowrap;
+  }
+  .pill.active { background: rgba(59,130,246,0.15); color: #3B82F6; border-color: rgba(59,130,246,0.3); }
+  .pill:active { transform: scale(0.95); }
+
+  /* Event Cards */
+  .event-card {
+    margin: 0 16px 12px; padding: 16px; background: #141422; border-radius: 16px;
+    cursor: pointer; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.04);
+  }
+  .event-card:active { transform: scale(0.98); background: #1a1a30; }
+  .event-card-title { font-size: 15px; color: #fff; font-weight: 600; margin-bottom: 12px; line-height: 1.4; }
+  .event-meta { display: flex; gap: 12px; margin-bottom: 12px; }
+  .event-meta span { font-size: 11px; color: #666; display: flex; align-items: center; gap: 4px; }
+  .prob-bar-container { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+  .prob-bar { flex: 1; height: 6px; background: #EC4899; border-radius: 3px; overflow: hidden; }
+  .prob-bar-fill { height: 100%; background: #3B82F6; border-radius: 3px; transition: width 0.6s ease; }
+  .prob-yes { font-size: 13px; color: #3B82F6; font-weight: 700; min-width: 38px; }
+  .prob-no { font-size: 13px; color: #EC4899; font-weight: 700; min-width: 38px; text-align: right; }
+  .quick-trade { display: flex; gap: 10px; }
+  .btn-yes, .btn-no {
+    flex: 1; padding: 10px; border-radius: 10px; border: none; font-size: 14px;
+    font-weight: 700; cursor: pointer; transition: all 0.15s; display: flex;
+    align-items: center; justify-content: center; gap: 6px;
+  }
+  .btn-yes { background: rgba(59,130,246,0.15); color: #3B82F6; }
+  .btn-no { background: rgba(236,72,153,0.15); color: #EC4899; }
+  .btn-yes:active { background: rgba(59,130,246,0.3); transform: scale(0.97); }
+  .btn-no:active { background: rgba(236,72,153,0.3); transform: scale(0.97); }
+
+  /* Detail Screen */
+  .detail-header {
+    display: flex; align-items: center; padding: 12px 16px; gap: 12px; flex-shrink: 0;
+  }
+  .detail-header .back-btn { width: 32px; height: 32px; fill: #fff; cursor: pointer; padding: 4px; }
+  .detail-header .back-btn:active { opacity: 0.6; }
+  .detail-header h2 { font-size: 16px; color: #fff; font-weight: 600; flex: 1; line-height: 1.3; }
+  .detail-header .share-btn { width: 22px; height: 22px; fill: #999; cursor: pointer; }
+
+  .event-info-bar {
+    display: flex; justify-content: space-around; padding: 12px 16px; margin: 0 16px;
+    background: #141422; border-radius: 12px; margin-bottom: 12px;
+  }
+  .info-item { text-align: center; }
+  .info-item .label { font-size: 10px; color: #666; margin-bottom: 4px; }
+  .info-item .value { font-size: 14px; color: #fff; font-weight: 600; }
+  .info-item .value.green { color: #22c55e; }
+
+  /* Chart Area */
+  .chart-area {
+    margin: 0 16px 12px; background: #141422; border-radius: 12px; padding: 16px; height: 200px;
+    position: relative; overflow: hidden;
+  }
+  .chart-area canvas { width: 100%; height: 100%; }
+  .chart-price-label {
+    position: absolute; top: 12px; left: 16px; display: flex; align-items: baseline; gap: 8px;
+  }
+  .chart-price-label .price { font-size: 22px; color: #fff; font-weight: 700; }
+  .chart-price-label .change { font-size: 13px; color: #22c55e; font-weight: 600; }
+
+  /* Detail Tabs */
+  .detail-tabs {
+    display: flex; gap: 0; padding: 0 16px; margin-bottom: 12px; flex-shrink: 0;
+  }
+  .detail-tab {
+    flex: 1; padding: 10px; text-align: center; font-size: 13px; color: #666;
+    border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;
+  }
+  .detail-tab.active { color: #3B82F6; border-bottom-color: #3B82F6; }
+
+  /* Order Book */
+  .order-book { padding: 0 16px; margin-bottom: 12px; }
+  .ob-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+  .ob-header span { font-size: 11px; color: #666; }
+  .ob-row { display: flex; justify-content: space-between; padding: 4px 0; position: relative; }
+  .ob-row .price-col { font-size: 13px; font-weight: 600; width: 70px; }
+  .ob-row .qty-col { font-size: 13px; color: #999; width: 70px; text-align: center; }
+  .ob-row .total-col { font-size: 13px; color: #666; width: 70px; text-align: right; }
+  .ob-row.ask .price-col { color: #EC4899; }
+  .ob-row.bid .price-col { color: #3B82F6; }
+  .ob-row .bg-bar {
+    position: absolute; top: 0; bottom: 0; right: 0; opacity: 0.08; border-radius: 2px;
+  }
+  .ob-row.ask .bg-bar { background: #EC4899; }
+  .ob-row.bid .bg-bar { background: #3B82F6; }
+  .ob-spread { text-align: center; padding: 8px 0; font-size: 12px; color: #666; }
+
+  /* Recent Trades */
+  .recent-trades { padding: 0 16px 120px; }
+  .recent-trades h3 { font-size: 14px; color: #fff; margin-bottom: 10px; }
+  .trade-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  .trade-row .trade-dir { font-size: 12px; font-weight: 600; width: 40px; }
+  .trade-row .trade-dir.buy { color: #3B82F6; }
+  .trade-row .trade-dir.sell { color: #EC4899; }
+  .trade-row .trade-price { font-size: 12px; color: #fff; }
+  .trade-row .trade-qty { font-size: 12px; color: #999; }
+  .trade-row .trade-time { font-size: 11px; color: #555; }
+
+  /* Fixed Bottom Trading Panel */
+  .trading-panel {
+    position: absolute; bottom: 0; left: 0; right: 0; background: #0d0d0d;
+    border-top: 1px solid rgba(255,255,255,0.06); padding: 12px 16px 32px;
+    z-index: 50;
+  }
+  .toggle-btns { display: flex; gap: 8px; margin-bottom: 12px; }
+  .toggle-btn {
+    flex: 1; padding: 10px; border-radius: 10px; border: 2px solid transparent;
+    font-size: 14px; font-weight: 700; cursor: pointer; text-align: center; transition: all 0.2s;
+  }
+  .toggle-btn.yes-active { background: rgba(59,130,246,0.15); color: #3B82F6; border-color: #3B82F6; }
+  .toggle-btn.no-active { background: rgba(236,72,153,0.15); color: #EC4899; border-color: #EC4899; }
+  .toggle-btn.inactive { background: #141422; color: #666; border-color: transparent; }
+  .input-group { margin-bottom: 10px; }
+  .input-group label { font-size: 11px; color: #666; margin-bottom: 4px; display: block; }
+  .input-row { display: flex; align-items: center; background: #141422; border-radius: 10px; padding: 0 4px; }
+  .input-row button {
+    width: 32px; height: 36px; background: none; border: none; color: #666;
+    font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+  }
+  .input-row button:active { color: #fff; }
+  .input-row input {
+    flex: 1; background: none; border: none; color: #fff; font-size: 15px;
+    text-align: center; outline: none; padding: 8px 0; font-weight: 600;
+  }
+  .quick-amounts { display: flex; gap: 6px; margin-bottom: 10px; }
+  .quick-amt {
+    flex: 1; padding: 6px; text-align: center; background: #1a1a2e; border-radius: 8px;
+    font-size: 12px; color: #999; cursor: pointer; border: none; transition: all 0.15s;
+  }
+  .quick-amt:active { background: #252540; color: #fff; }
+  .cost-info { display: flex; justify-content: space-between; margin-bottom: 12px; }
+  .cost-info span { font-size: 12px; color: #666; }
+  .cost-info .val { color: #fff; font-weight: 600; }
+  .submit-btn {
+    width: 100%; padding: 14px; border-radius: 12px; border: none; font-size: 16px;
+    font-weight: 700; cursor: pointer; transition: all 0.15s; color: #fff;
+  }
+  .submit-btn.yes-btn { background: #3B82F6; }
+  .submit-btn.no-btn { background: #EC4899; }
+  .submit-btn:active { transform: scale(0.98); opacity: 0.9; }
+
+  /* Positions Screen */
+  .summary-bar {
+    display: flex; justify-content: space-around; padding: 20px 16px; margin: 0 16px 16px;
+    background: #141422; border-radius: 16px;
+  }
+  .summary-item { text-align: center; }
+  .summary-item .s-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+  .summary-item .s-value { font-size: 20px; color: #fff; font-weight: 700; }
+  .summary-item .s-value.profit { color: #22c55e; }
+  .summary-item .s-value.loss { color: #ef4444; }
+
+  .section-title {
+    font-size: 14px; color: #999; padding: 0 16px; margin-bottom: 10px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .section-title .arrow { font-size: 12px; transition: transform 0.3s; }
+
+  .position-card {
+    margin: 0 16px 10px; padding: 14px; background: #141422; border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .pos-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+  .pos-title { font-size: 14px; color: #fff; font-weight: 600; flex: 1; line-height: 1.3; }
+  .pos-badge {
+    padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; margin-left: 8px; flex-shrink: 0;
+  }
+  .pos-badge.yes { background: rgba(59,130,246,0.15); color: #3B82F6; }
+  .pos-badge.no { background: rgba(236,72,153,0.15); color: #EC4899; }
+  .pos-details { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .pos-detail .pd-label { font-size: 10px; color: #555; }
+  .pos-detail .pd-value { font-size: 13px; color: #ccc; font-weight: 600; }
+  .pos-detail .pd-value.profit { color: #22c55e; }
+  .pos-detail .pd-value.loss { color: #ef4444; }
+  .sell-btn {
+    width: 100%; padding: 10px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(255,255,255,0.04); color: #fff; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .sell-btn:active { background: rgba(255,255,255,0.1); }
+
+  .settled-section { padding: 0 16px; margin-top: 12px; }
+  .settled-card {
+    padding: 12px; background: #141422; border-radius: 12px; margin-bottom: 8px; opacity: 0.6;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .settled-card .sc-title { font-size: 13px; color: #999; }
+  .settled-card .sc-result { font-size: 13px; font-weight: 700; }
+  .settled-card .sc-result.win { color: #22c55e; }
+  .settled-card .sc-result.lose { color: #ef4444; }
+
+  /* Orders Screen */
+  .order-tabs {
+    display: flex; padding: 0 16px; margin-bottom: 12px; gap: 0; flex-shrink: 0;
+  }
+  .order-tab {
+    flex: 1; padding: 10px 0; text-align: center; font-size: 13px; color: #666;
+    border-bottom: 2px solid transparent; cursor: pointer; transition: all 0.2s;
+  }
+  .order-tab.active { color: #fff; border-bottom-color: #3B82F6; }
+  .order-card {
+    margin: 0 16px 8px; padding: 14px; background: #141422; border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+  .oc-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .oc-title { font-size: 13px; color: #fff; font-weight: 600; flex: 1; }
+  .oc-badge {
+    padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 700;
+  }
+  .oc-badge.yes { background: rgba(59,130,246,0.15); color: #3B82F6; }
+  .oc-badge.no { background: rgba(236,72,153,0.15); color: #EC4899; }
+  .oc-details { display: flex; justify-content: space-between; }
+  .oc-detail { text-align: center; }
+  .oc-detail .od-label { font-size: 10px; color: #555; }
+  .oc-detail .od-value { font-size: 12px; color: #ccc; }
+  .oc-status { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .oc-status .status { font-size: 11px; padding: 2px 8px; border-radius: 4px; }
+  .oc-status .status.open { background: rgba(59,130,246,0.1); color: #3B82F6; }
+  .oc-status .status.filled { background: rgba(34,197,94,0.1); color: #22c55e; }
+  .oc-status .status.cancelled { background: rgba(255,255,255,0.05); color: #666; }
+  .oc-status .time { font-size: 11px; color: #555; }
+  .cancel-btn {
+    padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(239,68,68,0.3);
+    background: rgba(239,68,68,0.08); color: #ef4444; font-size: 11px; cursor: pointer;
+  }
+  .cancel-btn:active { background: rgba(239,68,68,0.2); }
+
+  /* Profile Screen */
+  .profile-balance {
+    margin: 8px 16px 16px; padding: 24px; background: linear-gradient(135deg, #1a1a3e, #141428);
+    border-radius: 20px; text-align: center; border: 1px solid rgba(59,130,246,0.1);
+  }
+  .pb-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+  .pb-amount { font-size: 32px; color: #fff; font-weight: 700; margin-bottom: 16px; }
+  .pb-amount .currency { font-size: 14px; color: #999; font-weight: 400; }
+  .transfer-btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 32px;
+    border-radius: 10px; background: #3B82F6; color: #fff; font-size: 14px;
+    font-weight: 600; border: none; cursor: pointer; transition: all 0.15s;
+  }
+  .transfer-btn:active { transform: scale(0.97); opacity: 0.9; }
+
+  .profile-stats {
+    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; padding: 0 16px; margin-bottom: 20px;
+  }
+  .stat-card {
+    padding: 16px 12px; background: #141422; border-radius: 14px; text-align: center;
+  }
+  .stat-card .st-value { font-size: 18px; color: #fff; font-weight: 700; margin-bottom: 4px; }
+  .stat-card .st-value.green { color: #22c55e; }
+  .stat-card .st-label { font-size: 10px; color: #666; }
+
+  .profile-links { padding: 0 16px; }
+  .profile-link {
+    display: flex; align-items: center; justify-content: space-between; padding: 16px;
+    background: #141422; border-radius: 12px; margin-bottom: 8px; cursor: pointer;
+    transition: background 0.15s;
+  }
+  .profile-link:active { background: #1a1a30; }
+  .pl-left { display: flex; align-items: center; gap: 12px; }
+  .pl-icon { width: 36px; height: 36px; border-radius: 10px; background: #1a1a2e; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .pl-text { font-size: 14px; color: #fff; }
+  .pl-arrow { color: #444; font-size: 16px; }
+
+  /* Animations */
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .event-card { animation: fadeInUp 0.4s ease both; }
+  .event-card:nth-child(1) { animation-delay: 0s; }
+  .event-card:nth-child(2) { animation-delay: 0.05s; }
+  .event-card:nth-child(3) { animation-delay: 0.1s; }
+  .event-card:nth-child(4) { animation-delay: 0.15s; }
+  .event-card:nth-child(5) { animation-delay: 0.2s; }
+  .event-card:nth-child(6) { animation-delay: 0.25s; }
+
+  /* Toast */
+  .toast {
+    position: absolute; top: 80px; left: 50%; transform: translateX(-50%) translateY(-20px);
+    background: #22c55e; color: #fff; padding: 10px 24px; border-radius: 10px;
+    font-size: 13px; font-weight: 600; z-index: 2000; opacity: 0; transition: all 0.3s ease;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 60px 20px; color: #444; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="device-frame">
+  <div class="notch"></div>
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <span class="icons">
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="#fff"><rect x="0" y="4" width="3" height="8" rx="0.5"/><rect x="4.5" y="2" width="3" height="10" rx="0.5"/><rect x="9" y="0" width="3" height="12" rx="0.5"/><rect x="13.5" y="3" width="2.5" height="9" rx="0.5" fill="#666"/></svg>
+      <svg width="16" height="12" viewBox="0 0 24 12" fill="#fff"><rect x="0" y="0" width="22" height="12" rx="2" stroke="#fff" stroke-width="1.5" fill="none"/><rect x="22.5" y="3.5" width="1.5" height="5" rx="0.5"/><rect x="2" y="2" width="14" height="8" rx="1"/></svg>
+    </span>
+  </div>
+
+  <div class="app-container">
+    <div class="toast" id="toast"></div>
+
+    <!-- Screen 1: Event Hall -->
+    <div class="screen" id="screen-market">
+      <div class="screen-header">
+        <h1>预测市场</h1>
+        <div class="header-icons">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/></svg>
+        </div>
+      </div>
+
+      <div class="category-pills">
+        <div class="pill active" onclick="selectPill(this)">🔥 热门</div>
+        <div class="pill" onclick="selectPill(this)">Crypto</div>
+        <div class="pill" onclick="selectPill(this)">政治</div>
+        <div class="pill" onclick="selectPill(this)">经济</div>
+        <div class="pill" onclick="selectPill(this)">体育</div>
+        <div class="pill" onclick="selectPill(this)">AI</div>
+      </div>
+
+      <div class="scroll-content" id="event-list"></div>
+
+      <div class="tab-bar" id="main-tabs">
+        <div class="tab-item active" onclick="switchTab(0)">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          <span>市场</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(1)">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          <span>持仓</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(2)">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>
+          <span>订单</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(3)">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>我的</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 2: Event Detail -->
+    <div class="screen hidden" id="screen-detail">
+      <div class="detail-header">
+        <svg class="back-btn" viewBox="0 0 24 24" onclick="goBack()"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+        <h2 id="detail-title">BTC 3/20 前突破 $90K?</h2>
+        <svg class="share-btn" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"/></svg>
+      </div>
+
+      <div class="scroll-content" style="padding-bottom: 320px;">
+        <div class="event-info-bar">
+          <div class="info-item"><div class="label">状态</div><div class="value green">进行中</div></div>
+          <div class="info-item"><div class="label">交易量</div><div class="value" id="detail-vol">$125K</div></div>
+          <div class="info-item"><div class="label">到期</div><div class="value" id="detail-expiry">4天后</div></div>
+        </div>
+
+        <div class="chart-area">
+          <div class="chart-price-label">
+            <span class="price" id="chart-price">$0.62</span>
+            <span class="change">+3.2%</span>
+          </div>
+          <canvas id="chart-canvas"></canvas>
+        </div>
+
+        <div class="detail-tabs">
+          <div class="detail-tab active" onclick="switchDetailTab(this, 'chart')">图表</div>
+          <div class="detail-tab" onclick="switchDetailTab(this, 'orderbook')">订单簿</div>
+          <div class="detail-tab" onclick="switchDetailTab(this, 'info')">信息</div>
+        </div>
+
+        <div id="detail-orderbook">
+          <div class="order-book">
+            <div class="ob-header"><span>价格</span><span>数量</span><span>累计</span></div>
+            <div id="ob-asks"></div>
+            <div class="ob-spread">价差: $0.03 (4.8%)</div>
+            <div id="ob-bids"></div>
+          </div>
+        </div>
+
+        <div class="recent-trades">
+          <h3>最近成交</h3>
+          <div id="trades-list"></div>
+        </div>
+      </div>
+
+      <div class="trading-panel">
+        <div class="toggle-btns">
+          <div class="toggle-btn yes-active" id="toggle-yes" onclick="toggleSide('yes')">YES</div>
+          <div class="toggle-btn inactive" id="toggle-no" onclick="toggleSide('no')">NO</div>
+        </div>
+        <div class="input-group">
+          <label>价格</label>
+          <div class="input-row">
+            <button onclick="adjustInput('price', -0.01)">-</button>
+            <input type="text" id="input-price" value="0.62">
+            <button onclick="adjustInput('price', 0.01)">+</button>
+          </div>
+        </div>
+        <div class="input-group">
+          <label>数量</label>
+          <div class="input-row">
+            <button onclick="adjustInput('amount', -10)">-</button>
+            <input type="text" id="input-amount" value="100">
+            <button onclick="adjustInput('amount', 10)">+</button>
+          </div>
+        </div>
+        <div class="quick-amounts">
+          <button class="quick-amt" onclick="setAmount(50)">50</button>
+          <button class="quick-amt" onclick="setAmount(100)">100</button>
+          <button class="quick-amt" onclick="setAmount(200)">200</button>
+          <button class="quick-amt" onclick="setAmount(500)">500</button>
+        </div>
+        <div class="cost-info">
+          <span>成本: <span class="val" id="cost-val">$62.00</span></span>
+          <span>预期收益: <span class="val" id="return-val">$38.00</span></span>
+        </div>
+        <button class="submit-btn yes-btn" id="submit-btn" onclick="submitOrder()">买入 YES</button>
+      </div>
+    </div>
+
+    <!-- Screen 3: Positions -->
+    <div class="screen hidden" id="screen-positions">
+      <div class="screen-header"><h1>持仓</h1><div></div></div>
+      <div class="scroll-content">
+        <div class="summary-bar">
+          <div class="summary-item">
+            <div class="s-label">总价值</div>
+            <div class="s-value">$1,247.50</div>
+          </div>
+          <div class="summary-item">
+            <div class="s-label">今日盈亏</div>
+            <div class="s-value profit">+$83.20</div>
+          </div>
+        </div>
+
+        <div class="section-title">活跃持仓 (3)</div>
+
+        <div class="position-card">
+          <div class="pos-header">
+            <span class="pos-title">BTC 3/20 前突破 $90K?</span>
+            <span class="pos-badge yes">YES</span>
+          </div>
+          <div class="pos-details">
+            <div class="pos-detail"><div class="pd-label">持仓</div><div class="pd-value">200 份</div></div>
+            <div class="pos-detail"><div class="pd-label">均价</div><div class="pd-value">$0.55</div></div>
+            <div class="pos-detail"><div class="pd-label">现价</div><div class="pd-value">$0.62</div></div>
+            <div class="pos-detail"><div class="pd-label">未实现盈亏</div><div class="pd-value profit">+$14.00</div></div>
+          </div>
+          <button class="sell-btn">卖出</button>
+        </div>
+
+        <div class="position-card">
+          <div class="pos-header">
+            <span class="pos-title">Trump 签署加密行政令?</span>
+            <span class="pos-badge yes">YES</span>
+          </div>
+          <div class="pos-details">
+            <div class="pos-detail"><div class="pd-label">持仓</div><div class="pd-value">150 份</div></div>
+            <div class="pos-detail"><div class="pd-label">均价</div><div class="pd-value">$0.65</div></div>
+            <div class="pos-detail"><div class="pd-label">现价</div><div class="pd-value">$0.72</div></div>
+            <div class="pos-detail"><div class="pd-label">未实现盈亏</div><div class="pd-value profit">+$10.50</div></div>
+          </div>
+          <button class="sell-btn">卖出</button>
+        </div>
+
+        <div class="position-card">
+          <div class="pos-header">
+            <span class="pos-title">Fed 6月是否降息?</span>
+            <span class="pos-badge no">NO</span>
+          </div>
+          <div class="pos-details">
+            <div class="pos-detail"><div class="pd-label">持仓</div><div class="pd-value">100 份</div></div>
+            <div class="pos-detail"><div class="pd-label">均价</div><div class="pd-value">$0.50</div></div>
+            <div class="pos-detail"><div class="pd-label">现价</div><div class="pd-value">$0.55</div></div>
+            <div class="pos-detail"><div class="pd-label">未实现盈亏</div><div class="pd-value profit">+$5.00</div></div>
+          </div>
+          <button class="sell-btn">卖出</button>
+        </div>
+
+        <div class="section-title" onclick="toggleSettled()" style="cursor:pointer; margin-top: 20px;">
+          已结算 <span class="arrow" id="settled-arrow">▼</span>
+        </div>
+        <div class="settled-section" id="settled-section" style="display:none;">
+          <div class="settled-card">
+            <span class="sc-title">BTC 3/10 前突破 $85K?</span>
+            <span class="sc-result win">+$45.00</span>
+          </div>
+          <div class="settled-card">
+            <span class="sc-title">ETH 3/5 前突破 $2.5K?</span>
+            <span class="sc-result lose">-$30.00</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar" id="pos-tabs">
+        <div class="tab-item" onclick="switchTab(0)">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          <span>市场</span>
+        </div>
+        <div class="tab-item active" onclick="switchTab(1)">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          <span>持仓</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(2)">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>
+          <span>订单</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(3)">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>我的</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 4: Orders -->
+    <div class="screen hidden" id="screen-orders">
+      <div class="screen-header"><h1>订单</h1><div></div></div>
+      <div class="order-tabs">
+        <div class="order-tab active" onclick="switchOrderTab(this, 0)">挂单中</div>
+        <div class="order-tab" onclick="switchOrderTab(this, 1)">历史订单</div>
+        <div class="order-tab" onclick="switchOrderTab(this, 2)">成交记录</div>
+      </div>
+      <div class="scroll-content" id="orders-content"></div>
+
+      <div class="tab-bar">
+        <div class="tab-item" onclick="switchTab(0)">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          <span>市场</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(1)">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          <span>持仓</span>
+        </div>
+        <div class="tab-item active" onclick="switchTab(2)">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>
+          <span>订单</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(3)">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>我的</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Screen 5: Profile -->
+    <div class="screen hidden" id="screen-profile">
+      <div class="screen-header"><h1>我的</h1><div></div></div>
+      <div class="scroll-content">
+        <div class="profile-balance">
+          <div class="pb-label">预测市场账户余额</div>
+          <div class="pb-amount">2,458.30 <span class="currency">USDT</span></div>
+          <button class="transfer-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#fff"><path d="M6.99 11L3 15l3.99 4v-3H14v-2H6.99v-3zM21 9l-3.99-4v3H10v2h7.01v3L21 9z"/></svg>
+            划转
+          </button>
+        </div>
+
+        <div class="profile-stats">
+          <div class="stat-card">
+            <div class="st-value">128</div>
+            <div class="st-label">总交易次数</div>
+          </div>
+          <div class="stat-card">
+            <div class="st-value green">63.2%</div>
+            <div class="st-label">胜率</div>
+          </div>
+          <div class="stat-card">
+            <div class="st-value green">+$842</div>
+            <div class="st-label">总盈亏</div>
+          </div>
+        </div>
+
+        <div class="profile-links">
+          <div class="profile-link">
+            <div class="pl-left">
+              <div class="pl-icon">📋</div>
+              <span class="pl-text">结算记录</span>
+            </div>
+            <span class="pl-arrow">›</span>
+          </div>
+          <div class="profile-link">
+            <div class="pl-left">
+              <div class="pl-icon">⚙️</div>
+              <span class="pl-text">交易设置</span>
+            </div>
+            <span class="pl-arrow">›</span>
+          </div>
+          <div class="profile-link">
+            <div class="pl-left">
+              <div class="pl-icon">❓</div>
+              <span class="pl-text">帮助中心</span>
+            </div>
+            <span class="pl-arrow">›</span>
+          </div>
+          <div class="profile-link">
+            <div class="pl-left">
+              <div class="pl-icon">📊</div>
+              <span class="pl-text">排行榜</span>
+            </div>
+            <span class="pl-arrow">›</span>
+          </div>
+          <div class="profile-link">
+            <div class="pl-left">
+              <div class="pl-icon">📖</div>
+              <span class="pl-text">预测市场指南</span>
+            </div>
+            <span class="pl-arrow">›</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab-item" onclick="switchTab(0)">
+          <svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
+          <span>市场</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(1)">
+          <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg>
+          <span>持仓</span>
+        </div>
+        <div class="tab-item" onclick="switchTab(2)">
+          <svg viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 7V3.5L18.5 9H13zM6 20V4h5v7h7v9H6z"/></svg>
+          <span>订单</span>
+        </div>
+        <div class="tab-item active" onclick="switchTab(3)">
+          <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          <span>我的</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-indicator"></div>
+</div>
+
+<script>
+  // Event Data
+  const events = [
+    { id: 1, title: 'BTC 3/20 前突破 $90K?', yes: 62, vol: '$125K', expiry: '4天后', category: 'crypto', hot: true },
+    { id: 2, title: 'Fed 6月是否降息?', yes: 45, vol: '$89K', expiry: '82天后', category: '经济', hot: true },
+    { id: 3, title: 'SEC Q2 批准 SOL ETF?', yes: 28, vol: '$56K', expiry: '45天后', category: 'crypto', hot: false },
+    { id: 4, title: 'ETH 3/25 前突破 $3K?', yes: 35, vol: '$42K', expiry: '9天后', category: 'crypto', hot: true },
+    { id: 5, title: 'Trump 签署加密行政令?', yes: 72, vol: '$210K', expiry: '30天后', category: '政治', hot: true },
+    { id: 6, title: 'BNB Q2 突破 $400?', yes: 55, vol: '$38K', expiry: '60天后', category: 'crypto', hot: false },
+  ];
+
+  // Render Event List
+  function renderEvents() {
+    const list = document.getElementById('event-list');
+    list.innerHTML = events.map(e => `
+      <div class="event-card" onclick="openDetail(${e.id})">
+        <div class="event-card-title">${e.hot ? '🔥 ' : ''}${e.title}</div>
+        <div class="event-meta">
+          <span>📊 交易量 ${e.vol}</span>
+          <span>⏱ ${e.expiry}</span>
+        </div>
+        <div class="prob-bar-container">
+          <span class="prob-yes">YES ${e.yes}%</span>
+          <div class="prob-bar"><div class="prob-bar-fill" style="width:${e.yes}%"></div></div>
+          <span class="prob-no">${100 - e.yes}%</span>
+        </div>
+        <div class="quick-trade">
+          <button class="btn-yes" onclick="event.stopPropagation(); quickTrade(${e.id}, 'yes')">👍 买入 Yes $${(e.yes / 100).toFixed(2)}</button>
+          <button class="btn-no" onclick="event.stopPropagation(); quickTrade(${e.id}, 'no')">👎 买入 No $${((100 - e.yes) / 100).toFixed(2)}</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  // Tab Switching
+  const screens = ['screen-market', 'screen-positions', 'screen-orders', 'screen-profile'];
+  let currentTab = 0;
+
+  function switchTab(idx) {
+    if (idx === currentTab) return;
+    screens.forEach(s => { document.getElementById(s).classList.add('hidden'); });
+    document.getElementById(screens[idx]).classList.remove('hidden');
+    // Update all tab bars
+    document.querySelectorAll('.tab-bar').forEach(bar => {
+      bar.querySelectorAll('.tab-item').forEach((t, i) => {
+        t.classList.toggle('active', i === idx);
+      });
+    });
+    currentTab = idx;
+    if (idx === 2) renderOrders(0);
+  }
+
+  // Detail Screen
+  let currentSide = 'yes';
+
+  function openDetail(id) {
+    const ev = events.find(e => e.id === id);
+    if (!ev) return;
+    document.getElementById('detail-title').textContent = ev.title;
+    document.getElementById('detail-vol').textContent = ev.vol;
+    document.getElementById('detail-expiry').textContent = ev.expiry;
+    document.getElementById('chart-price').textContent = '$' + (ev.yes / 100).toFixed(2);
+    document.getElementById('input-price').value = (ev.yes / 100).toFixed(2);
+    updateCost();
+    drawChart(ev.yes);
+    renderOrderBook(ev.yes);
+    renderTrades();
+
+    document.getElementById('screen-market').classList.add('hidden');
+    document.getElementById('screen-detail').classList.remove('hidden');
+    toggleSide('yes');
+  }
+
+  function goBack() {
+    document.getElementById('screen-detail').classList.add('hidden');
+    document.getElementById(screens[currentTab]).classList.remove('hidden');
+  }
+
+  // Toggle YES/NO
+  function toggleSide(side) {
+    currentSide = side;
+    const yesBtn = document.getElementById('toggle-yes');
+    const noBtn = document.getElementById('toggle-no');
+    const submitBtn = document.getElementById('submit-btn');
+    if (side === 'yes') {
+      yesBtn.className = 'toggle-btn yes-active';
+      noBtn.className = 'toggle-btn inactive';
+      submitBtn.className = 'submit-btn yes-btn';
+      submitBtn.textContent = '买入 YES';
+    } else {
+      yesBtn.className = 'toggle-btn inactive';
+      noBtn.className = 'toggle-btn no-active';
+      submitBtn.className = 'submit-btn no-btn';
+      submitBtn.textContent = '买入 NO';
+    }
+    updateCost();
+  }
+
+  // Input adjustments
+  function adjustInput(field, delta) {
+    const input = document.getElementById(field === 'price' ? 'input-price' : 'input-amount');
+    let val = parseFloat(input.value) + delta;
+    if (field === 'price') val = Math.max(0.01, Math.min(0.99, val));
+    else val = Math.max(10, val);
+    input.value = field === 'price' ? val.toFixed(2) : Math.round(val);
+    updateCost();
+  }
+
+  function setAmount(n) {
+    document.getElementById('input-amount').value = n;
+    updateCost();
+  }
+
+  function updateCost() {
+    const price = parseFloat(document.getElementById('input-price').value) || 0;
+    const amount = parseInt(document.getElementById('input-amount').value) || 0;
+    const cost = price * amount;
+    const ret = amount - cost;
+    document.getElementById('cost-val').textContent = '$' + cost.toFixed(2);
+    document.getElementById('return-val').textContent = '$' + ret.toFixed(2);
+  }
+
+  // Draw Chart
+  function drawChart(yesPercent) {
+    const canvas = document.getElementById('chart-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth * 2;
+    canvas.height = canvas.offsetHeight * 2;
+    ctx.scale(2, 2);
+    const w = canvas.offsetWidth, h = canvas.offsetHeight;
+    ctx.clearRect(0, 0, w, h);
+
+    // Generate path
+    const pts = [];
+    const base = yesPercent / 100;
+    let val = base - 0.15;
+    for (let i = 0; i <= 50; i++) {
+      val += (Math.random() - 0.48) * 0.03;
+      val = Math.max(0.05, Math.min(0.95, val));
+      pts.push(val);
+    }
+    pts[pts.length - 1] = base;
+
+    const xStep = w / (pts.length - 1);
+    const yMin = 0, yMax = 1;
+    const mapY = v => h - 40 - ((v - yMin) / (yMax - yMin)) * (h - 60);
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.5;
+    for (let i = 0; i < 5; i++) {
+      const gy = 20 + (i * (h - 60) / 4);
+      ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke();
+    }
+
+    // Gradient fill
+    const grad = ctx.createLinearGradient(0, 0, 0, h);
+    grad.addColorStop(0, 'rgba(59,130,246,0.25)');
+    grad.addColorStop(1, 'rgba(59,130,246,0)');
+    ctx.beginPath();
+    ctx.moveTo(0, mapY(pts[0]));
+    for (let i = 1; i < pts.length; i++) {
+      const x0 = (i - 1) * xStep, x1 = i * xStep;
+      const cx = (x0 + x1) / 2;
+      ctx.bezierCurveTo(cx, mapY(pts[i - 1]), cx, mapY(pts[i]), x1, mapY(pts[i]));
+    }
+    ctx.lineTo(w, h);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(0, mapY(pts[0]));
+    for (let i = 1; i < pts.length; i++) {
+      const x0 = (i - 1) * xStep, x1 = i * xStep;
+      const cx = (x0 + x1) / 2;
+      ctx.bezierCurveTo(cx, mapY(pts[i - 1]), cx, mapY(pts[i]), x1, mapY(pts[i]));
+    }
+    ctx.strokeStyle = '#3B82F6';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // End dot
+    const lastX = (pts.length - 1) * xStep, lastY = mapY(pts[pts.length - 1]);
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#3B82F6';
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 8, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(59,130,246,0.2)';
+    ctx.fill();
+  }
+
+  // Order Book
+  function renderOrderBook(yesPercent) {
+    const base = yesPercent / 100;
+    const asks = [], bids = [];
+    for (let i = 5; i >= 1; i--) {
+      const p = base + i * 0.01;
+      asks.push({ price: p.toFixed(2), qty: Math.floor(Math.random() * 500 + 100), side: 'ask' });
+    }
+    for (let i = 1; i <= 5; i++) {
+      const p = base - i * 0.01;
+      bids.push({ price: p.toFixed(2), qty: Math.floor(Math.random() * 500 + 100), side: 'bid' });
+    }
+    const maxQty = Math.max(...asks.map(a => a.qty), ...bids.map(b => b.qty));
+
+    let cumA = 0;
+    document.getElementById('ob-asks').innerHTML = asks.map(a => {
+      cumA += a.qty;
+      return `<div class="ob-row ask">
+        <div class="bg-bar" style="width:${(a.qty / maxQty) * 100}%"></div>
+        <span class="price-col">${a.price}</span><span class="qty-col">${a.qty}</span><span class="total-col">${cumA}</span>
+      </div>`;
+    }).join('');
+
+    let cumB = 0;
+    document.getElementById('ob-bids').innerHTML = bids.map(b => {
+      cumB += b.qty;
+      return `<div class="ob-row bid">
+        <div class="bg-bar" style="width:${(b.qty / maxQty) * 100}%"></div>
+        <span class="price-col">${b.price}</span><span class="qty-col">${b.qty}</span><span class="total-col">${cumB}</span>
+      </div>`;
+    }).join('');
+  }
+
+  // Recent Trades
+  function renderTrades() {
+    const trades = [];
+    for (let i = 0; i < 10; i++) {
+      const isBuy = Math.random() > 0.45;
+      trades.push({
+        dir: isBuy ? '买入' : '卖出',
+        cls: isBuy ? 'buy' : 'sell',
+        price: (0.55 + Math.random() * 0.15).toFixed(2),
+        qty: Math.floor(Math.random() * 200 + 20),
+        time: `${Math.floor(Math.random() * 59 + 1)}秒前`
+      });
+    }
+    document.getElementById('trades-list').innerHTML = trades.map(t =>
+      `<div class="trade-row">
+        <span class="trade-dir ${t.cls}">${t.dir}</span>
+        <span class="trade-price">$${t.price}</span>
+        <span class="trade-qty">${t.qty} 份</span>
+        <span class="trade-time">${t.time}</span>
+      </div>`
+    ).join('');
+  }
+
+  // Detail Tabs
+  function switchDetailTab(el, tab) {
+    el.parentElement.querySelectorAll('.detail-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Orders Screen
+  const ordersData = {
+    open: [
+      { title: 'BTC 3/20 前突破 $90K?', side: 'yes', price: '0.60', qty: '50', status: 'open', time: '2分钟前' },
+      { title: 'ETH 3/25 前突破 $3K?', side: 'no', price: '0.68', qty: '30', status: 'open', time: '15分钟前' },
+    ],
+    history: [
+      { title: 'Trump 签署加密行政令?', side: 'yes', price: '0.65', qty: '150', status: 'filled', time: '2小时前' },
+      { title: 'Fed 6月是否降息?', side: 'no', price: '0.50', qty: '100', status: 'filled', time: '1天前' },
+      { title: 'BNB Q2 突破 $400?', side: 'yes', price: '0.52', qty: '80', status: 'cancelled', time: '2天前' },
+    ],
+    trades: [
+      { title: 'BTC 3/20 前突破 $90K?', side: 'yes', price: '0.55', qty: '200', status: 'filled', time: '3天前' },
+      { title: 'Trump 签署加密行政令?', side: 'yes', price: '0.65', qty: '150', status: 'filled', time: '2小时前' },
+      { title: 'Fed 6月是否降息?', side: 'no', price: '0.50', qty: '100', status: 'filled', time: '1天前' },
+    ]
+  };
+
+  function renderOrders(tabIdx) {
+    const data = tabIdx === 0 ? ordersData.open : tabIdx === 1 ? ordersData.history : ordersData.trades;
+    const container = document.getElementById('orders-content');
+    if (data.length === 0) {
+      container.innerHTML = '<div class="empty-state">暂无数据</div>';
+      return;
+    }
+    container.innerHTML = data.map(o => `
+      <div class="order-card">
+        <div class="oc-top">
+          <span class="oc-title">${o.title}</span>
+          <span class="oc-badge ${o.side}">${o.side.toUpperCase()}</span>
+        </div>
+        <div class="oc-details">
+          <div class="oc-detail"><div class="od-label">价格</div><div class="od-value">$${o.price}</div></div>
+          <div class="oc-detail"><div class="od-label">数量</div><div class="od-value">${o.qty} 份</div></div>
+          <div class="oc-detail"><div class="od-label">金额</div><div class="od-value">$${(parseFloat(o.price) * parseInt(o.qty)).toFixed(2)}</div></div>
+        </div>
+        <div class="oc-status">
+          <span class="status ${o.status}">${o.status === 'open' ? '挂单中' : o.status === 'filled' ? '已成交' : '已取消'}</span>
+          ${o.status === 'open' ? '<button class="cancel-btn">取消</button>' : ''}
+          <span class="time">${o.time}</span>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function switchOrderTab(el, idx) {
+    el.parentElement.querySelectorAll('.order-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    renderOrders(idx);
+  }
+
+  // Settled toggle
+  function toggleSettled() {
+    const sec = document.getElementById('settled-section');
+    const arrow = document.getElementById('settled-arrow');
+    if (sec.style.display === 'none') {
+      sec.style.display = 'block';
+      arrow.style.transform = 'rotate(180deg)';
+    } else {
+      sec.style.display = 'none';
+      arrow.style.transform = 'rotate(0deg)';
+    }
+  }
+
+  // Quick trade
+  function quickTrade(id, side) {
+    openDetail(id);
+    toggleSide(side);
+  }
+
+  // Submit order
+  function submitOrder() {
+    showToast('订单已提交');
+  }
+
+  // Toast
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2000);
+  }
+
+  // Category pills
+  function selectPill(el) {
+    el.parentElement.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Input listeners
+  document.getElementById('input-price').addEventListener('input', updateCost);
+  document.getElementById('input-amount').addEventListener('input', updateCost);
+
+  // Init
+  renderEvents();
+</script>
+</body>
+</html>

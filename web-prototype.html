@@ -1,0 +1,1708 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Toobit - Prediction Market</title>
+<style>
+/* ========== RESET & BASE ========== */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: #0f0f1a;
+  color: #e0e0e0;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; border: none; outline: none; }
+input { font-family: inherit; outline: none; border: none; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+/* ========== VARIABLES ========== */
+:root {
+  --bg-primary: #0f0f1a;
+  --bg-secondary: #12122a;
+  --bg-tertiary: #1a1a35;
+  --bg-nav: #0d0d0d;
+  --bg-card: #161630;
+  --bg-input: #1e1e3a;
+  --border: #2a2a4a;
+  --text-primary: #e0e0e0;
+  --text-secondary: #8888aa;
+  --text-muted: #555577;
+  --yes-blue: #3B82F6;
+  --no-pink: #EC4899;
+  --green: #22c55e;
+  --red: #ef4444;
+  --accent: #3B82F6;
+  --yellow: #eab308;
+}
+
+/* ========== TOP NAV ========== */
+.top-nav {
+  background: var(--bg-nav);
+  height: 56px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  border-bottom: 1px solid #1a1a2a;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 32px;
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+}
+.nav-logo svg { width: 28px; height: 28px; }
+.nav-items { display: flex; gap: 4px; flex: 1; }
+.nav-item {
+  padding: 8px 14px;
+  color: var(--text-secondary);
+  font-size: 14px;
+  border-radius: 6px;
+  transition: all .2s;
+  position: relative;
+  white-space: nowrap;
+}
+.nav-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.nav-item.has-dropdown::after {
+  content: '';
+  display: inline-block;
+  width: 0; height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid currentColor;
+  margin-left: 4px;
+  vertical-align: middle;
+}
+.nav-item .dropdown {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: #1a1a2e;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 0;
+  min-width: 160px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 100;
+}
+.nav-item:hover .dropdown { display: block; }
+.dropdown-item {
+  display: block;
+  padding: 10px 16px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  transition: all .15s;
+}
+.dropdown-item:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.dropdown-item.active { color: var(--yes-blue); }
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.btn-deposit {
+  background: var(--green);
+  color: #000;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: opacity .2s;
+}
+.btn-deposit:hover { opacity: .85; }
+.nav-icon {
+  width: 36px; height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  transition: all .2s;
+  font-size: 16px;
+}
+.nav-icon:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--yes-blue), var(--no-pink));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  color: #fff;
+  font-weight: 600;
+}
+
+/* ========== BOTTOM TICKER ========== */
+.bottom-ticker {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+  background: var(--bg-nav);
+  border-top: 1px solid #1a1a2a;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  z-index: 1000;
+}
+.ticker-track {
+  display: flex;
+  gap: 32px;
+  animation: tickerScroll 40s linear infinite;
+  white-space: nowrap;
+}
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.ticker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.ticker-item .symbol { color: #fff; font-weight: 500; }
+.ticker-item .price { color: #fff; }
+.ticker-item .change { font-weight: 500; }
+.ticker-item .change.up { color: var(--green); }
+.ticker-item .change.down { color: var(--red); }
+
+/* ========== PAGE CONTAINER ========== */
+.page { display: none; padding-bottom: 40px; }
+.page.active { display: block; }
+
+/* ========== EVENT HALL ========== */
+.hall-header {
+  padding: 32px 32px 0;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+.hall-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.hall-subtitle {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.hall-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 20px;
+}
+.search-box {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  width: 280px;
+  transition: border-color .2s;
+}
+.search-box:focus-within { border-color: var(--yes-blue); }
+.search-box input {
+  background: transparent;
+  color: #fff;
+  padding: 10px 8px;
+  flex: 1;
+  font-size: 13px;
+}
+.search-box input::placeholder { color: var(--text-muted); }
+.search-box .icon { color: var(--text-muted); font-size: 14px; }
+.category-pills {
+  display: flex;
+  gap: 8px;
+}
+.pill {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 13px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  border: 1px solid transparent;
+  transition: all .2s;
+  white-space: nowrap;
+}
+.pill:hover { color: #fff; border-color: var(--border); }
+.pill.active { background: var(--yes-blue); color: #fff; border-color: var(--yes-blue); }
+.sort-options {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+.sort-btn {
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all .2s;
+}
+.sort-btn:hover { color: #fff; }
+.sort-btn.active { color: var(--yes-blue); background: rgba(59,130,246,0.1); }
+
+/* Event Table */
+.event-table {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 32px;
+}
+.event-row {
+  display: grid;
+  grid-template-columns: 1fr 200px 100px 100px 180px;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 20px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+  transition: all .2s;
+}
+.event-row:hover {
+  border-color: var(--yes-blue);
+  background: #1a1a40;
+  transform: translateY(-1px);
+}
+.event-info { display: flex; flex-direction: column; gap: 4px; }
+.event-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: #fff;
+}
+.event-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.event-meta .tag {
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(59,130,246,0.1);
+  color: var(--yes-blue);
+  font-size: 11px;
+}
+.prob-bar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.prob-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: var(--bg-input);
+  overflow: hidden;
+  display: flex;
+}
+.prob-bar .yes-fill {
+  background: var(--yes-blue);
+  border-radius: 4px 0 0 4px;
+  transition: width .5s;
+}
+.prob-bar .no-fill {
+  background: var(--no-pink);
+  border-radius: 0 4px 4px 0;
+  flex: 1;
+}
+.prob-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+.prob-labels .yes-label { color: var(--yes-blue); font-weight: 600; }
+.prob-labels .no-label { color: var(--no-pink); font-weight: 600; }
+.event-vol {
+  font-size: 14px;
+  color: #fff;
+  font-weight: 500;
+  text-align: right;
+}
+.event-vol span { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; }
+.event-expiry {
+  font-size: 13px;
+  color: var(--text-secondary);
+  text-align: right;
+}
+.event-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.btn-yes, .btn-no {
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all .2s;
+}
+.btn-yes {
+  background: rgba(59,130,246,0.15);
+  color: var(--yes-blue);
+  border: 1px solid rgba(59,130,246,0.3);
+}
+.btn-yes:hover { background: var(--yes-blue); color: #fff; }
+.btn-no {
+  background: rgba(236,72,153,0.15);
+  color: var(--no-pink);
+  border: 1px solid rgba(236,72,153,0.3);
+}
+.btn-no:hover { background: var(--no-pink); color: #fff; }
+
+/* ========== TRADING PAGE ========== */
+.trade-layout {
+  display: grid;
+  grid-template-columns: 48px 1fr 320px;
+  grid-template-rows: auto 1fr auto;
+  min-height: calc(100vh - 56px - 32px);
+}
+
+/* Sidebar */
+.trade-sidebar {
+  background: var(--bg-nav);
+  border-right: 1px solid #1a1a2a;
+  padding: 8px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.sidebar-icon {
+  width: 36px; height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 16px;
+  transition: all .2s;
+  cursor: pointer;
+  position: relative;
+}
+.sidebar-icon:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.sidebar-icon.active { color: var(--yes-blue); background: rgba(59,130,246,0.1); }
+.sidebar-icon .tooltip {
+  display: none;
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #2a2a4a;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 10;
+}
+.sidebar-icon:hover .tooltip { display: block; }
+
+/* Center Area */
+.trade-center {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.event-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+.event-header-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.event-header-stats {
+  display: flex;
+  gap: 24px;
+  font-size: 13px;
+}
+.stat-item { display: flex; align-items: center; gap: 6px; }
+.stat-label { color: var(--text-muted); }
+.stat-value { color: #fff; font-weight: 500; }
+.stat-value.green { color: var(--green); }
+.stat-value.countdown { color: var(--yellow); }
+
+/* Chart Area */
+.chart-area {
+  flex: 1;
+  min-height: 350px;
+  position: relative;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border);
+}
+.chart-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+.chart-tf {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  background: transparent;
+  transition: all .15s;
+}
+.chart-tf:hover { color: #fff; }
+.chart-tf.active { color: var(--yes-blue); background: rgba(59,130,246,0.1); }
+.chart-canvas {
+  width: 100%;
+  height: calc(100% - 40px);
+  position: relative;
+  overflow: hidden;
+}
+.chart-mock {
+  position: absolute;
+  inset: 20px;
+}
+.chart-mock svg { width: 100%; height: 100%; }
+.chart-price-labels {
+  position: absolute;
+  right: 0;
+  top: 20px;
+  bottom: 20px;
+  width: 60px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 8px;
+}
+.chart-price-labels span {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-align: right;
+}
+.chart-current-price {
+  position: absolute;
+  right: 0;
+  top: 45%;
+  background: var(--yes-blue);
+  color: #fff;
+  padding: 3px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 3px 0 0 3px;
+}
+
+/* Order Book */
+.orderbook {
+  height: 280px;
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.ob-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.ob-title { font-size: 13px; font-weight: 600; color: #fff; }
+.ob-tabs { display: flex; gap: 4px; }
+.ob-tab {
+  width: 24px; height: 18px;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-input);
+  cursor: pointer;
+  transition: all .15s;
+}
+.ob-tab:hover { background: var(--bg-tertiary); }
+.ob-tab.active { background: var(--yes-blue); }
+.ob-tab-lines { display: flex; flex-direction: column; gap: 1px; }
+.ob-tab-line { width: 10px; height: 2px; border-radius: 1px; }
+.ob-tab:nth-child(1) .ob-tab-line { background: var(--no-pink); }
+.ob-tab:nth-child(1) .ob-tab-line:nth-child(3) { background: var(--yes-blue); }
+.ob-tab:nth-child(2) .ob-tab-line { background: var(--no-pink); }
+.ob-tab:nth-child(3) .ob-tab-line { background: var(--yes-blue); }
+.ob-col-headers {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 6px 16px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.ob-col-headers span:last-child { text-align: right; }
+.ob-col-headers span:nth-child(2) { text-align: center; }
+.ob-body { flex: 1; overflow-y: auto; }
+.ob-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  padding: 3px 16px;
+  font-size: 12px;
+  position: relative;
+  transition: background .1s;
+}
+.ob-row:hover { background: rgba(255,255,255,0.02); }
+.ob-row .price { font-weight: 500; }
+.ob-row .price.ask { color: var(--no-pink); }
+.ob-row .price.bid { color: var(--yes-blue); }
+.ob-row .qty { text-align: center; color: var(--text-secondary); }
+.ob-row .total { text-align: right; color: var(--text-muted); }
+.ob-row .depth-bar {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  opacity: 0.08;
+}
+.ob-row .depth-bar.ask { right: 0; background: var(--no-pink); }
+.ob-row .depth-bar.bid { right: 0; background: var(--yes-blue); }
+.ob-spread {
+  padding: 6px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #fff;
+  font-weight: 600;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: rgba(59,130,246,0.05);
+}
+.ob-spread .label { color: var(--text-muted); font-size: 11px; font-weight: 400; }
+
+/* Trading Panel */
+.trade-panel {
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+.tp-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.yn-toggle {
+  display: flex;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.yn-btn {
+  flex: 1;
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  transition: all .2s;
+  background: var(--bg-input);
+  color: var(--text-muted);
+}
+.yn-btn.yes.active { background: var(--yes-blue); color: #fff; }
+.yn-btn.no.active { background: var(--no-pink); color: #fff; }
+.yn-btn:not(.active):hover { background: var(--bg-tertiary); color: var(--text-secondary); }
+.tp-body {
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+}
+.tp-order-tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+}
+.tp-order-tab {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  transition: all .15s;
+}
+.tp-order-tab:hover { color: #fff; }
+.tp-order-tab.active { color: #fff; background: var(--bg-input); }
+.tp-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+.tp-balance .label { color: var(--text-muted); }
+.tp-balance .val { color: #fff; font-weight: 500; }
+.tp-balance .transfer {
+  color: var(--yes-blue);
+  font-size: 12px;
+  cursor: pointer;
+}
+.tp-balance .transfer:hover { text-decoration: underline; }
+.tp-field {
+  margin-bottom: 14px;
+}
+.tp-field-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.tp-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 4px;
+  transition: border-color .2s;
+}
+.tp-input-wrap:focus-within { border-color: var(--yes-blue); }
+.tp-input-wrap input {
+  flex: 1;
+  background: transparent;
+  color: #fff;
+  padding: 10px 8px;
+  font-size: 14px;
+  text-align: center;
+}
+.tp-input-wrap input::placeholder { color: var(--text-muted); }
+.tp-input-btn {
+  width: 28px; height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 16px;
+  transition: all .15s;
+}
+.tp-input-btn:hover { color: #fff; background: #2a2a55; }
+.tp-pct-btns {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.tp-pct {
+  flex: 1;
+  padding: 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  text-align: center;
+  border: 1px solid var(--border);
+  transition: all .15s;
+}
+.tp-pct:hover { color: #fff; border-color: var(--yes-blue); }
+.tp-pct.active { color: var(--yes-blue); border-color: var(--yes-blue); background: rgba(59,130,246,0.1); }
+.tp-summary {
+  background: var(--bg-input);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 14px;
+}
+.tp-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+  padding: 4px 0;
+}
+.tp-summary-row .label { color: var(--text-muted); }
+.tp-summary-row .val { color: #fff; }
+.tp-expected {
+  background: rgba(59,130,246,0.08);
+  border: 1px solid rgba(59,130,246,0.2);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 16px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  text-align: center;
+}
+.tp-expected .highlight {
+  color: var(--green);
+  font-weight: 600;
+  font-size: 14px;
+}
+.tp-submit {
+  width: 100%;
+  padding: 14px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  color: #fff;
+  transition: all .2s;
+}
+.tp-submit.buy-yes { background: var(--yes-blue); }
+.tp-submit.buy-yes:hover { background: #2563eb; }
+.tp-submit.buy-no { background: var(--no-pink); }
+.tp-submit.buy-no:hover { background: #db2777; }
+
+/* Recent Trades */
+.recent-trades {
+  border-top: 1px solid var(--border);
+  padding: 12px 16px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+.rt-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.rt-header, .rt-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  font-size: 11px;
+  padding: 3px 0;
+}
+.rt-header { color: var(--text-muted); margin-bottom: 4px; }
+.rt-header span:nth-child(2) { text-align: center; }
+.rt-header span:last-child { text-align: right; }
+.rt-row span:nth-child(2) { text-align: center; color: var(--text-secondary); }
+.rt-row span:last-child { text-align: right; color: var(--text-muted); }
+.rt-row .yes-trade { color: var(--yes-blue); }
+.rt-row .no-trade { color: var(--no-pink); }
+
+/* Bottom Tabs */
+.bottom-section {
+  background: var(--bg-secondary);
+  border-top: 1px solid var(--border);
+  grid-column: 1 / -1;
+}
+.bs-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border);
+}
+.bs-tab {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.bs-tab:hover { color: #fff; }
+.bs-tab.active { color: #fff; border-bottom-color: var(--yes-blue); }
+.bs-content { padding: 16px 20px; min-height: 200px; }
+.positions-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.positions-table th {
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+.positions-table td {
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(42,42,74,0.5);
+}
+.positions-table td.event-cell { color: #fff; font-weight: 500; max-width: 200px; }
+.positions-table td .dir-yes {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(59,130,246,0.15);
+  color: var(--yes-blue);
+  font-size: 12px;
+  font-weight: 600;
+}
+.positions-table td .dir-no {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(236,72,153,0.15);
+  color: var(--no-pink);
+  font-size: 12px;
+  font-weight: 600;
+}
+.pnl-positive { color: var(--green) !important; font-weight: 600; }
+.pnl-negative { color: var(--red) !important; font-weight: 600; }
+.btn-close-pos {
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  background: rgba(239,68,68,0.15);
+  color: var(--red);
+  border: 1px solid rgba(239,68,68,0.3);
+  transition: all .15s;
+}
+.btn-close-pos:hover { background: var(--red); color: #fff; }
+
+/* ========== PORTFOLIO PAGE ========== */
+.portfolio-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px;
+}
+.portfolio-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 24px;
+}
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+}
+.summary-card .card-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.summary-card .card-value {
+  font-size: 28px;
+  font-weight: 700;
+  color: #fff;
+}
+.summary-card .card-value.positive { color: var(--green); }
+.summary-card .card-value.negative { color: var(--red); }
+.summary-card .card-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+.port-section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.port-table-wrap {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+.port-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.port-table th {
+  text-align: left;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 400;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-secondary);
+}
+.port-table td {
+  padding: 14px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(42,42,74,0.3);
+}
+.port-table tr:hover td { background: rgba(255,255,255,0.02); }
+.port-table td:first-child { color: #fff; font-weight: 500; }
+.settled-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.settled-badge.win { background: rgba(34,197,94,0.15); color: var(--green); }
+.settled-badge.loss { background: rgba(239,68,68,0.15); color: var(--red); }
+
+/* ========== ANIMATIONS ========== */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: fadeIn .3s ease-out; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .6; } }
+.pulse { animation: pulse 2s ease-in-out infinite; }
+
+/* ========== PAGE TABS ========== */
+.page-tabs {
+  display: none;
+}
+</style>
+</head>
+<body>
+
+<!-- ==================== TOP NAVIGATION ==================== -->
+<nav class="top-nav">
+  <a class="nav-logo" href="#" onclick="showPage('hall')">
+    <svg viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="12" stroke="url(#g1)" stroke-width="2"/><path d="M9 14l3 3 7-7" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="0" y1="0" x2="28" y2="28"><stop stop-color="#3B82F6"/><stop offset="1" stop-color="#22c55e"/></linearGradient></defs></svg>
+    Toobit
+  </a>
+  <div class="nav-items">
+    <a class="nav-item" href="#">Buy Crypto</a>
+    <a class="nav-item" href="#">Markets</a>
+    <a class="nav-item" href="#">Futures</a>
+    <div class="nav-item has-dropdown">
+      Trade
+      <div class="dropdown">
+        <a class="dropdown-item" href="#">Spot</a>
+        <a class="dropdown-item" href="#">Margin</a>
+        <a class="dropdown-item" href="#">Convert</a>
+        <a class="dropdown-item active" href="#" onclick="showPage('hall')">Prediction</a>
+      </div>
+    </div>
+    <a class="nav-item" href="#">Copy</a>
+    <a class="nav-item" href="#">Rewards</a>
+    <div class="nav-item has-dropdown">
+      More
+      <div class="dropdown">
+        <a class="dropdown-item" href="#">Launchpad</a>
+        <a class="dropdown-item" href="#">Earn</a>
+      </div>
+    </div>
+  </div>
+  <div class="nav-right">
+    <button class="btn-deposit">Deposit</button>
+    <button class="nav-icon" title="Search">&#x1F50D;</button>
+    <button class="nav-icon" title="Notifications">&#x1F514;</button>
+    <button class="nav-icon" onclick="showPage('portfolio')" title="Portfolio">&#x1F4CA;</button>
+    <div class="avatar">MX</div>
+  </div>
+</nav>
+
+<!-- ==================== PAGE: EVENT HALL ==================== -->
+<div id="page-hall" class="page active">
+  <div class="hall-header">
+    <h1 class="hall-title">&#x1F52E; Prediction Market &middot; 事件大厅</h1>
+    <p class="hall-subtitle">交易你对未来事件的判断，用概率定价世界</p>
+    <div class="hall-controls">
+      <div class="search-box">
+        <span class="icon">&#x1F50D;</span>
+        <input type="text" placeholder="搜索事件..." id="hallSearch" oninput="filterEvents()">
+      </div>
+      <div class="category-pills">
+        <button class="pill active" onclick="filterCategory(this, 'all')">&#x1F525; Hot</button>
+        <button class="pill" onclick="filterCategory(this, 'crypto')">&#x1F4C8; Crypto</button>
+        <button class="pill" onclick="filterCategory(this, 'politics')">&#x1F30D; Politics</button>
+        <button class="pill" onclick="filterCategory(this, 'economy')">&#x1F4CA; Economy</button>
+        <button class="pill" onclick="filterCategory(this, 'sports')">&#x1F3C8; Sports</button>
+      </div>
+      <div class="sort-options">
+        <button class="sort-btn active" onclick="sortEvents(this, 'volume')">Volume</button>
+        <button class="sort-btn" onclick="sortEvents(this, 'newest')">Newest</button>
+        <button class="sort-btn" onclick="sortEvents(this, 'expiring')">Expiring Soon</button>
+      </div>
+    </div>
+  </div>
+  <div class="event-table" id="eventTable"></div>
+</div>
+
+<!-- ==================== PAGE: TRADING DETAIL ==================== -->
+<div id="page-trade" class="page">
+  <div class="trade-layout">
+    <!-- Sidebar -->
+    <aside class="trade-sidebar">
+      <div class="sidebar-icon active" onclick="filterCategory(null,'all'); showPage('hall');">
+        <span>&#x2302;</span>
+        <span class="tooltip">大厅</span>
+      </div>
+      <div class="sidebar-icon" onclick="filterCategory(null,'crypto'); showPage('hall');">
+        <span>&#x20BF;</span>
+        <span class="tooltip">Crypto</span>
+      </div>
+      <div class="sidebar-icon" onclick="filterCategory(null,'politics'); showPage('hall');">
+        <span>&#x1F3DB;</span>
+        <span class="tooltip">Politics</span>
+      </div>
+      <div class="sidebar-icon" onclick="filterCategory(null,'economy'); showPage('hall');">
+        <span>&#x1F4B9;</span>
+        <span class="tooltip">Economy</span>
+      </div>
+      <div class="sidebar-icon" onclick="filterCategory(null,'sports'); showPage('hall');">
+        <span>&#x26BD;</span>
+        <span class="tooltip">Sports</span>
+      </div>
+      <div style="flex:1"></div>
+      <div class="sidebar-icon" onclick="showPage('portfolio')">
+        <span>&#x1F4CB;</span>
+        <span class="tooltip">我的持仓</span>
+      </div>
+    </aside>
+
+    <!-- Center -->
+    <main class="trade-center">
+      <div class="event-header">
+        <div class="event-header-title" id="tradeEventTitle">BTC 3/20 前突破 $90K?</div>
+        <div class="event-header-stats">
+          <div class="stat-item"><span class="stat-label">24h Vol</span><span class="stat-value" id="tradeVol">$125,000</span></div>
+          <div class="stat-item"><span class="stat-label">到期</span><span class="stat-value countdown" id="tradeExpiry">4 天后</span></div>
+          <div class="stat-item"><span class="stat-label">状态</span><span class="stat-value green">交易中</span></div>
+          <div class="stat-item"><span class="stat-label">YES 价格</span><span class="stat-value" style="color:var(--yes-blue)" id="tradeYesPrice">$0.62</span></div>
+          <div class="stat-item"><span class="stat-label">NO 价格</span><span class="stat-value" style="color:var(--no-pink)" id="tradeNoPrice">$0.38</span></div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="chart-area">
+        <div class="chart-toolbar">
+          <button class="chart-tf">1m</button>
+          <button class="chart-tf">5m</button>
+          <button class="chart-tf">15m</button>
+          <button class="chart-tf active">1H</button>
+          <button class="chart-tf">4H</button>
+          <button class="chart-tf">1D</button>
+          <span style="flex:1"></span>
+          <span style="font-size:11px;color:var(--text-muted)">TradingView</span>
+        </div>
+        <div class="chart-canvas">
+          <div class="chart-mock" id="chartMock"></div>
+          <div class="chart-price-labels">
+            <span>0.80</span><span>0.70</span><span>0.60</span><span>0.50</span><span>0.40</span><span>0.30</span>
+          </div>
+          <div class="chart-current-price" id="chartCurrentPrice">0.62</div>
+        </div>
+      </div>
+
+      <!-- Order Book -->
+      <div class="orderbook">
+        <div class="ob-header">
+          <span class="ob-title">Order Book</span>
+          <div class="ob-tabs">
+            <div class="ob-tab active"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
+            <div class="ob-tab"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
+            <div class="ob-tab"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
+          </div>
+        </div>
+        <div class="ob-col-headers">
+          <span>Price (USDT)</span><span>Qty (Shares)</span><span>Total</span>
+        </div>
+        <div class="ob-body" id="obAsks"></div>
+        <div class="ob-spread"><span class="label">Spread</span><span id="obSpreadVal">0.01 (1.6%)</span></div>
+        <div class="ob-body" id="obBids"></div>
+      </div>
+    </main>
+
+    <!-- Trading Panel -->
+    <aside class="trade-panel">
+      <div class="tp-header">
+        <div class="yn-toggle">
+          <button class="yn-btn yes active" onclick="toggleYN('yes')">YES</button>
+          <button class="yn-btn no" onclick="toggleYN('no')">NO</button>
+        </div>
+      </div>
+      <div class="tp-body">
+        <div class="tp-order-tabs">
+          <button class="tp-order-tab active">Limit</button>
+          <button class="tp-order-tab">Market</button>
+          <button class="tp-order-tab">IOC</button>
+        </div>
+        <div class="tp-balance">
+          <span><span class="label">可用余额 </span><span class="val">1,250.00 USDT</span></span>
+          <span class="transfer">Transfer</span>
+        </div>
+        <div class="tp-field">
+          <div class="tp-field-label"><span>价格</span><span id="tpPriceRange">0.01 - 0.99</span></div>
+          <div class="tp-input-wrap">
+            <button class="tp-input-btn" onclick="adjustPrice(-0.01)">-</button>
+            <input type="text" id="tpPrice" value="0.62" oninput="calcTrade()">
+            <button class="tp-input-btn" onclick="adjustPrice(0.01)">+</button>
+          </div>
+        </div>
+        <div class="tp-field">
+          <div class="tp-field-label"><span>数量 (Shares)</span><span id="tpMaxShares">Max: 2,016</span></div>
+          <div class="tp-input-wrap">
+            <button class="tp-input-btn" onclick="adjustQty(-10)">-</button>
+            <input type="text" id="tpQty" value="100" oninput="calcTrade()">
+            <button class="tp-input-btn" onclick="adjustQty(10)">+</button>
+          </div>
+        </div>
+        <div class="tp-pct-btns">
+          <button class="tp-pct" onclick="setPct(25)">25%</button>
+          <button class="tp-pct" onclick="setPct(50)">50%</button>
+          <button class="tp-pct" onclick="setPct(75)">75%</button>
+          <button class="tp-pct" onclick="setPct(100)">100%</button>
+        </div>
+        <div class="tp-summary">
+          <div class="tp-summary-row"><span class="label">成本</span><span class="val" id="tpCost">62.00 USDT</span></div>
+          <div class="tp-summary-row"><span class="label">手续费 (0.1%)</span><span class="val" id="tpFee">0.06 USDT</span></div>
+          <div class="tp-summary-row"><span class="label">合计</span><span class="val" id="tpTotal">62.06 USDT</span></div>
+        </div>
+        <div class="tp-expected" id="tpExpected">
+          投入 <strong>62.06 USDT</strong> 买入 YES@0.62<br>
+          若胜出获得 <span class="highlight">100.00 USDT</span><br>
+          潜在收益 <span class="highlight">+61.3%</span>
+        </div>
+        <button class="tp-submit buy-yes" id="tpSubmitBtn" onclick="submitOrder()">Buy YES</button>
+      </div>
+      <div class="recent-trades">
+        <div class="rt-title">最近成交</div>
+        <div class="rt-header"><span>Price</span><span>Qty</span><span>Time</span></div>
+        <div id="recentTradesBody"></div>
+      </div>
+    </aside>
+
+    <!-- Bottom Section -->
+    <div class="bottom-section">
+      <div class="bs-tabs">
+        <button class="bs-tab active" onclick="switchBsTab(this, 'positions')">持仓 (2)</button>
+        <button class="bs-tab" onclick="switchBsTab(this, 'open-orders')">挂单 (1)</button>
+        <button class="bs-tab" onclick="switchBsTab(this, 'trade-history')">成交历史</button>
+        <button class="bs-tab" onclick="switchBsTab(this, 'order-history')">委托历史</button>
+      </div>
+      <div class="bs-content" id="bsContent">
+        <table class="positions-table">
+          <thead>
+            <tr><th>事件</th><th>方向</th><th>持有</th><th>均价</th><th>现价</th><th>盈亏</th><th>操作</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="event-cell">BTC 3/20 前突破 $90K?</td>
+              <td><span class="dir-yes">YES</span></td>
+              <td>200 Shares</td>
+              <td>$0.58</td>
+              <td>$0.62</td>
+              <td class="pnl-positive">+$8.00 (+6.9%)</td>
+              <td><button class="btn-close-pos">平仓</button></td>
+            </tr>
+            <tr>
+              <td class="event-cell">Trump 是否签署加密行政令?</td>
+              <td><span class="dir-yes">YES</span></td>
+              <td>150 Shares</td>
+              <td>$0.65</td>
+              <td>$0.72</td>
+              <td class="pnl-positive">+$10.50 (+10.8%)</td>
+              <td><button class="btn-close-pos">平仓</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE: PORTFOLIO ==================== -->
+<div id="page-portfolio" class="page">
+  <div class="portfolio-container animate-in">
+    <h1 class="portfolio-title">&#x1F4CB; 我的持仓</h1>
+
+    <div class="summary-cards">
+      <div class="summary-card">
+        <div class="card-label">总持仓价值</div>
+        <div class="card-value">$342.60</div>
+        <div class="card-sub">5 个活跃持仓</div>
+      </div>
+      <div class="summary-card">
+        <div class="card-label">未实现盈亏</div>
+        <div class="card-value positive">+$28.50</div>
+        <div class="card-sub">+9.07%</div>
+      </div>
+      <div class="summary-card">
+        <div class="card-label">已结算盈亏</div>
+        <div class="card-value positive">+$156.20</div>
+        <div class="card-sub">累计 12 笔结算</div>
+      </div>
+    </div>
+
+    <div class="port-section-title">活跃持仓</div>
+    <div class="port-table-wrap">
+      <table class="port-table">
+        <thead>
+          <tr><th>事件</th><th>方向</th><th>持有</th><th>均价</th><th>现价</th><th>盈亏</th><th>到期</th><th>操作</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>BTC 3/20 前突破 $90K?</td>
+            <td><span class="dir-yes">YES</span></td>
+            <td>200</td>
+            <td>$0.58</td>
+            <td>$0.62</td>
+            <td class="pnl-positive">+$8.00 (+6.9%)</td>
+            <td>4 天后</td>
+            <td><button class="btn-close-pos">平仓</button></td>
+          </tr>
+          <tr>
+            <td>Trump 是否签署加密行政令?</td>
+            <td><span class="dir-yes">YES</span></td>
+            <td>150</td>
+            <td>$0.65</td>
+            <td>$0.72</td>
+            <td class="pnl-positive">+$10.50 (+10.8%)</td>
+            <td>30 天后</td>
+            <td><button class="btn-close-pos">平仓</button></td>
+          </tr>
+          <tr>
+            <td>Fed 6月是否降息?</td>
+            <td><span class="dir-no">NO</span></td>
+            <td>100</td>
+            <td>$0.52</td>
+            <td>$0.55</td>
+            <td class="pnl-positive">+$3.00 (+5.8%)</td>
+            <td>82 天后</td>
+            <td><button class="btn-close-pos">平仓</button></td>
+          </tr>
+          <tr>
+            <td>ETH 3/25 前突破 $3K?</td>
+            <td><span class="dir-yes">YES</span></td>
+            <td>80</td>
+            <td>$0.40</td>
+            <td>$0.35</td>
+            <td class="pnl-negative">-$4.00 (-12.5%)</td>
+            <td>9 天后</td>
+            <td><button class="btn-close-pos">平仓</button></td>
+          </tr>
+          <tr>
+            <td>Nvidia Q2 财报超预期?</td>
+            <td><span class="dir-yes">YES</span></td>
+            <td>120</td>
+            <td>$0.60</td>
+            <td>$0.68</td>
+            <td class="pnl-positive">+$9.60 (+13.3%)</td>
+            <td>45 天后</td>
+            <td><button class="btn-close-pos">平仓</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="port-section-title">历史结算</div>
+    <div class="port-table-wrap">
+      <table class="port-table">
+        <thead>
+          <tr><th>事件</th><th>方向</th><th>持有</th><th>均价</th><th>结算价</th><th>盈亏</th><th>结果</th><th>结算日期</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>BTC 3月初突破 $85K?</td>
+            <td><span class="dir-yes">YES</span></td>
+            <td>300</td>
+            <td>$0.55</td>
+            <td>$1.00</td>
+            <td class="pnl-positive">+$135.00</td>
+            <td><span class="settled-badge win">WIN</span></td>
+            <td>2026-03-05</td>
+          </tr>
+          <tr>
+            <td>ETH 2月底突破 $4K?</td>
+            <td><span class="dir-yes">YES</span></td>
+            <td>100</td>
+            <td>$0.30</td>
+            <td>$0.00</td>
+            <td class="pnl-negative">-$30.00</td>
+            <td><span class="settled-badge loss">LOSS</span></td>
+            <td>2026-02-28</td>
+          </tr>
+          <tr>
+            <td>Super Bowl 酋长队夺冠?</td>
+            <td><span class="dir-no">NO</span></td>
+            <td>200</td>
+            <td>$0.45</td>
+            <td>$1.00</td>
+            <td class="pnl-positive">+$110.00</td>
+            <td><span class="settled-badge win">WIN</span></td>
+            <td>2026-02-10</td>
+          </tr>
+          <tr>
+            <td>DOGE 1月突破 $0.15?</td>
+            <td><span class="dir-yes">YES</span></td>
+            <td>500</td>
+            <td>$0.70</td>
+            <td>$1.00</td>
+            <td class="pnl-positive">+$150.00</td>
+            <td><span class="settled-badge win">WIN</span></td>
+            <td>2026-01-20</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== BOTTOM TICKER ==================== -->
+<div class="bottom-ticker">
+  <div class="ticker-track" id="tickerTrack"></div>
+</div>
+
+<!-- ==================== JAVASCRIPT ==================== -->
+<script>
+// ===== DATA =====
+const events = [
+  { id: 1, name: 'BTC 3/20 前突破 $90K?', yes: 62, vol: 125000, expiry: '4 天后', cat: 'crypto', tag: 'Crypto', days: 4 },
+  { id: 2, name: 'Fed 6月是否降息?', yes: 45, vol: 89000, expiry: '82 天后', cat: 'economy', tag: 'Economy', days: 82 },
+  { id: 3, name: 'SEC Q2 批准 SOL ETF?', yes: 28, vol: 56000, expiry: '45 天后', cat: 'crypto', tag: 'Crypto', days: 45 },
+  { id: 4, name: 'ETH 3/25 前突破 $3K?', yes: 35, vol: 42000, expiry: '9 天后', cat: 'crypto', tag: 'Crypto', days: 9 },
+  { id: 5, name: 'Trump 是否签署加密行政令?', yes: 72, vol: 210000, expiry: '30 天后', cat: 'politics', tag: 'Politics', days: 30 },
+  { id: 6, name: 'BNB 在 Q2 突破 $400?', yes: 55, vol: 38000, expiry: '60 天后', cat: 'crypto', tag: 'Crypto', days: 60 },
+  { id: 7, name: 'Nvidia Q2 财报超预期?', yes: 68, vol: 95000, expiry: '45 天后', cat: 'economy', tag: 'Economy', days: 45 },
+  { id: 8, name: '2026 世界杯巴西夺冠?', yes: 18, vol: 320000, expiry: '120 天后', cat: 'sports', tag: 'Sports', days: 120 },
+];
+
+let currentCategory = 'all';
+let currentSort = 'volume';
+let currentEvent = events[0];
+let tradeDirection = 'yes';
+
+// ===== PAGE NAVIGATION =====
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  if (page === 'hall') renderEvents();
+}
+
+// ===== EVENT HALL =====
+function renderEvents() {
+  let filtered = events;
+  if (currentCategory !== 'all') filtered = filtered.filter(e => e.cat === currentCategory);
+  const q = document.getElementById('hallSearch')?.value?.toLowerCase() || '';
+  if (q) filtered = filtered.filter(e => e.name.toLowerCase().includes(q));
+  if (currentSort === 'volume') filtered.sort((a, b) => b.vol - a.vol);
+  else if (currentSort === 'newest') filtered.sort((a, b) => b.id - a.id);
+  else if (currentSort === 'expiring') filtered.sort((a, b) => a.days - b.days);
+
+  const table = document.getElementById('eventTable');
+  table.innerHTML = filtered.map(e => `
+    <div class="event-row animate-in" onclick="openTrade(${e.id})">
+      <div class="event-info">
+        <div class="event-name">${e.name}</div>
+        <div class="event-meta">
+          <span class="tag">${e.tag}</span>
+          <span>${e.expiry}</span>
+        </div>
+      </div>
+      <div class="prob-bar-wrap">
+        <div class="prob-bar">
+          <div class="yes-fill" style="width:${e.yes}%"></div>
+          <div class="no-fill"></div>
+        </div>
+        <div class="prob-labels">
+          <span class="yes-label">YES ${e.yes}%</span>
+          <span class="no-label">NO ${100 - e.yes}%</span>
+        </div>
+      </div>
+      <div class="event-vol">$${(e.vol / 1000).toFixed(0)}K<span>24h Vol</span></div>
+      <div class="event-expiry">${e.expiry}</div>
+      <div class="event-actions">
+        <button class="btn-yes" onclick="event.stopPropagation(); openTrade(${e.id}, 'yes')">YES ${(e.yes / 100).toFixed(2)}</button>
+        <button class="btn-no" onclick="event.stopPropagation(); openTrade(${e.id}, 'no')">NO ${((100 - e.yes) / 100).toFixed(2)}</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function filterCategory(btn, cat) {
+  currentCategory = cat;
+  if (btn) {
+    document.querySelectorAll('.category-pills .pill').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+  }
+  renderEvents();
+}
+
+function filterEvents() { renderEvents(); }
+
+function sortEvents(btn, sort) {
+  currentSort = sort;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEvents();
+}
+
+// ===== TRADING PAGE =====
+function openTrade(id, dir) {
+  currentEvent = events.find(e => e.id === id) || events[0];
+  tradeDirection = dir || 'yes';
+  loadTradeData();
+  showPage('trade');
+}
+
+function loadTradeData() {
+  const e = currentEvent;
+  const yesPrice = (e.yes / 100).toFixed(2);
+  const noPrice = ((100 - e.yes) / 100).toFixed(2);
+  document.getElementById('tradeEventTitle').textContent = e.name;
+  document.getElementById('tradeVol').textContent = '$' + e.vol.toLocaleString();
+  document.getElementById('tradeExpiry').textContent = e.expiry;
+  document.getElementById('tradeYesPrice').textContent = '$' + yesPrice;
+  document.getElementById('tradeNoPrice').textContent = '$' + noPrice;
+  document.getElementById('chartCurrentPrice').textContent = yesPrice;
+
+  const price = tradeDirection === 'yes' ? yesPrice : noPrice;
+  document.getElementById('tpPrice').value = price;
+
+  toggleYN(tradeDirection);
+  renderOrderBook(parseFloat(yesPrice));
+  renderRecentTrades(parseFloat(yesPrice));
+  renderChart(parseFloat(yesPrice));
+  calcTrade();
+}
+
+function toggleYN(dir) {
+  tradeDirection = dir;
+  document.querySelectorAll('.yn-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.yn-btn.' + dir).classList.add('active');
+  const yesPrice = (currentEvent.yes / 100).toFixed(2);
+  const noPrice = ((100 - currentEvent.yes) / 100).toFixed(2);
+  const price = dir === 'yes' ? yesPrice : noPrice;
+  document.getElementById('tpPrice').value = price;
+  const btn = document.getElementById('tpSubmitBtn');
+  if (dir === 'yes') {
+    btn.className = 'tp-submit buy-yes';
+    btn.textContent = 'Buy YES';
+  } else {
+    btn.className = 'tp-submit buy-no';
+    btn.textContent = 'Buy NO';
+  }
+  calcTrade();
+}
+
+function adjustPrice(delta) {
+  const inp = document.getElementById('tpPrice');
+  let v = parseFloat(inp.value) + delta;
+  v = Math.min(0.99, Math.max(0.01, v));
+  inp.value = v.toFixed(2);
+  calcTrade();
+}
+
+function adjustQty(delta) {
+  const inp = document.getElementById('tpQty');
+  let v = parseInt(inp.value) + delta;
+  v = Math.max(1, v);
+  inp.value = v;
+  calcTrade();
+}
+
+function setPct(pct) {
+  document.querySelectorAll('.tp-pct').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  const price = parseFloat(document.getElementById('tpPrice').value);
+  const balance = 1250;
+  const maxShares = Math.floor((balance * pct / 100) / price);
+  document.getElementById('tpQty').value = maxShares;
+  calcTrade();
+}
+
+function calcTrade() {
+  const price = parseFloat(document.getElementById('tpPrice').value) || 0;
+  const qty = parseInt(document.getElementById('tpQty').value) || 0;
+  const cost = price * qty;
+  const fee = cost * 0.001;
+  const total = cost + fee;
+  const payout = qty * 1;
+  const returnPct = cost > 0 ? ((payout - total) / total * 100) : 0;
+
+  document.getElementById('tpCost').textContent = cost.toFixed(2) + ' USDT';
+  document.getElementById('tpFee').textContent = fee.toFixed(2) + ' USDT';
+  document.getElementById('tpTotal').textContent = total.toFixed(2) + ' USDT';
+
+  const maxShares = Math.floor(1250 / price);
+  document.getElementById('tpMaxShares').textContent = 'Max: ' + maxShares.toLocaleString();
+
+  const dir = tradeDirection.toUpperCase();
+  document.getElementById('tpExpected').innerHTML =
+    `投入 <strong>${total.toFixed(2)} USDT</strong> 买入 ${dir}@${price.toFixed(2)}<br>` +
+    `若胜出获得 <span class="highlight">${payout.toFixed(2)} USDT</span><br>` +
+    `潜在收益 <span class="highlight">+${returnPct.toFixed(1)}%</span>`;
+}
+
+function submitOrder() {
+  const btn = document.getElementById('tpSubmitBtn');
+  const orig = btn.textContent;
+  btn.textContent = '已提交 ✓';
+  btn.style.opacity = '0.6';
+  setTimeout(() => { btn.textContent = orig; btn.style.opacity = '1'; }, 1500);
+}
+
+// ===== ORDER BOOK =====
+function renderOrderBook(midPrice) {
+  const asks = [];
+  const bids = [];
+  for (let i = 6; i >= 1; i--) {
+    const p = midPrice + i * 0.01;
+    if (p <= 0.99) {
+      const qty = Math.floor(Math.random() * 500 + 50);
+      asks.push({ price: p, qty, total: (asks.length > 0 ? asks[asks.length-1].total : 0) + qty });
+    }
+  }
+  asks.reverse();
+  for (let i = 1; i <= 6; i++) {
+    const p = midPrice - i * 0.01;
+    if (p >= 0.01) {
+      const qty = Math.floor(Math.random() * 500 + 50);
+      bids.push({ price: p, qty, total: (bids.length > 0 ? bids[bids.length-1].total : 0) + qty });
+    }
+  }
+  const maxAskTotal = asks.length ? asks[0].total : 1;
+  const maxBidTotal = bids.length ? bids[bids.length-1].total : 1;
+
+  document.getElementById('obAsks').innerHTML = asks.map(a =>
+    `<div class="ob-row"><span class="price ask">${a.price.toFixed(2)}</span><span class="qty">${a.qty}</span><span class="total">${a.total}</span><div class="depth-bar ask" style="width:${a.total/maxAskTotal*100}%"></div></div>`
+  ).join('');
+  document.getElementById('obBids').innerHTML = bids.map(b =>
+    `<div class="ob-row"><span class="price bid">${b.price.toFixed(2)}</span><span class="qty">${b.qty}</span><span class="total">${b.total}</span><div class="depth-bar bid" style="width:${b.total/maxBidTotal*100}%"></div></div>`
+  ).join('');
+}
+
+// ===== RECENT TRADES =====
+function renderRecentTrades(midPrice) {
+  let html = '';
+  for (let i = 0; i < 10; i++) {
+    const isYes = Math.random() > 0.4;
+    const p = midPrice + (Math.random() - 0.5) * 0.04;
+    const q = Math.floor(Math.random() * 200 + 10);
+    const h = new Date().getHours();
+    const m = new Date().getMinutes() - i;
+    const s = Math.floor(Math.random() * 60);
+    html += `<div class="rt-row"><span class="${isYes ? 'yes-trade' : 'no-trade'}">${p.toFixed(2)}</span><span>${q}</span><span>${String(h).padStart(2,'0')}:${String(Math.max(0,m)).padStart(2,'0')}:${String(s).padStart(2,'0')}</span></div>`;
+  }
+  document.getElementById('recentTradesBody').innerHTML = html;
+}
+
+// ===== CHART =====
+function renderChart(price) {
+  const w = 800, h = 250;
+  const points = [];
+  let y = price;
+  for (let i = 0; i <= 60; i++) {
+    y += (Math.random() - 0.48) * 0.015;
+    y = Math.max(0.2, Math.min(0.85, y));
+    points.push({ x: (i / 60) * w, y: (1 - (y - 0.2) / 0.65) * h });
+  }
+  // Ensure last point ends at current price
+  points[points.length-1].y = (1 - (price - 0.2) / 0.65) * h;
+
+  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
+  const areaD = pathD + ` L${w},${h} L0,${h} Z`;
+
+  document.getElementById('chartMock').innerHTML = `
+    <svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id="cg" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="var(--yes-blue)" stop-opacity="0.3"/>
+          <stop offset="100%" stop-color="var(--yes-blue)" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+      ${[0.2,0.35,0.5,0.65,0.8].map(v => {
+        const ly = (1 - (v - 0.2) / 0.65) * h;
+        return `<line x1="0" y1="${ly}" x2="${w}" y2="${ly}" stroke="var(--border)" stroke-width="0.5" stroke-dasharray="4,4"/>`;
+      }).join('')}
+      <path d="${areaD}" fill="url(#cg)"/>
+      <path d="${pathD}" fill="none" stroke="var(--yes-blue)" stroke-width="2"/>
+      <circle cx="${points[points.length-1].x}" cy="${points[points.length-1].y}" r="4" fill="var(--yes-blue)"/>
+    </svg>
+  `;
+}
+
+// ===== BOTTOM SECTION TABS =====
+function switchBsTab(btn, tab) {
+  document.querySelectorAll('.bs-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const content = document.getElementById('bsContent');
+  if (tab === 'positions') {
+    content.innerHTML = `<table class="positions-table"><thead><tr><th>事件</th><th>方向</th><th>持有</th><th>均价</th><th>现价</th><th>盈亏</th><th>操作</th></tr></thead><tbody>
+      <tr><td class="event-cell">BTC 3/20 前突破 $90K?</td><td><span class="dir-yes">YES</span></td><td>200 Shares</td><td>$0.58</td><td>$0.62</td><td class="pnl-positive">+$8.00 (+6.9%)</td><td><button class="btn-close-pos">平仓</button></td></tr>
+      <tr><td class="event-cell">Trump 是否签署加密行政令?</td><td><span class="dir-yes">YES</span></td><td>150 Shares</td><td>$0.65</td><td>$0.72</td><td class="pnl-positive">+$10.50 (+10.8%)</td><td><button class="btn-close-pos">平仓</button></td></tr>
+    </tbody></table>`;
+  } else if (tab === 'open-orders') {
+    content.innerHTML = `<table class="positions-table"><thead><tr><th>事件</th><th>方向</th><th>价格</th><th>数量</th><th>已成交</th><th>时间</th><th>操作</th></tr></thead><tbody>
+      <tr><td class="event-cell">ETH 3/25 前突破 $3K?</td><td><span class="dir-yes">YES</span></td><td>$0.32</td><td>100 Shares</td><td>0 / 100</td><td>2026-03-16 14:30</td><td><button class="btn-close-pos">撤单</button></td></tr>
+    </tbody></table>`;
+  } else if (tab === 'trade-history') {
+    content.innerHTML = `<table class="positions-table"><thead><tr><th>事件</th><th>方向</th><th>价格</th><th>数量</th><th>手续费</th><th>时间</th></tr></thead><tbody>
+      <tr><td class="event-cell">BTC 3/20 前突破 $90K?</td><td><span class="dir-yes">YES</span></td><td>$0.58</td><td>200</td><td>$0.12</td><td>2026-03-15 10:22</td></tr>
+      <tr><td class="event-cell">Trump 是否签署加密行政令?</td><td><span class="dir-yes">YES</span></td><td>$0.65</td><td>150</td><td>$0.10</td><td>2026-03-14 16:45</td></tr>
+      <tr><td class="event-cell">Fed 6月是否降息?</td><td><span class="dir-no">NO</span></td><td>$0.52</td><td>100</td><td>$0.05</td><td>2026-03-13 09:11</td></tr>
+    </tbody></table>`;
+  } else {
+    content.innerHTML = `<table class="positions-table"><thead><tr><th>事件</th><th>方向</th><th>类型</th><th>价格</th><th>数量</th><th>状态</th><th>时间</th></tr></thead><tbody>
+      <tr><td class="event-cell">BTC 3/20 前突破 $90K?</td><td><span class="dir-yes">YES</span></td><td>Limit</td><td>$0.58</td><td>200</td><td style="color:var(--green)">已成交</td><td>2026-03-15 10:22</td></tr>
+      <tr><td class="event-cell">ETH 3/25 前突破 $3K?</td><td><span class="dir-yes">YES</span></td><td>Limit</td><td>$0.32</td><td>100</td><td style="color:var(--yellow)">挂单中</td><td>2026-03-16 14:30</td></tr>
+      <tr><td class="event-cell">Trump 是否签署加密行政令?</td><td><span class="dir-yes">YES</span></td><td>Market</td><td>$0.65</td><td>150</td><td style="color:var(--green)">已成交</td><td>2026-03-14 16:45</td></tr>
+    </tbody></table>`;
+  }
+}
+
+// ===== TICKER =====
+function initTicker() {
+  const tickers = [
+    { sym: 'BTC/USDT', price: '87,432.50', change: '+2.34%', up: true },
+    { sym: 'ETH/USDT', price: '2,845.20', change: '+1.56%', up: true },
+    { sym: 'BNB/USDT', price: '385.40', change: '-0.82%', up: false },
+    { sym: 'SOL/USDT', price: '142.30', change: '+4.21%', up: true },
+    { sym: 'XRP/USDT', price: '2.18', change: '-1.15%', up: false },
+    { sym: 'DOGE/USDT', price: '0.1234', change: '+0.45%', up: true },
+    { sym: 'ADA/USDT', price: '0.6850', change: '+1.89%', up: true },
+    { sym: 'AVAX/USDT', price: '38.92', change: '-0.67%', up: false },
+    { sym: 'DOT/USDT', price: '7.45', change: '+3.12%', up: true },
+    { sym: 'LINK/USDT', price: '18.76', change: '+2.01%', up: true },
+  ];
+  const html = tickers.map(t =>
+    `<div class="ticker-item"><span class="symbol">${t.sym}</span><span class="price">${t.price}</span><span class="change ${t.up?'up':'down'}">${t.change}</span></div>`
+  ).join('');
+  document.getElementById('tickerTrack').innerHTML = html + html; // duplicate for infinite scroll
+}
+
+// ===== MOCK REALTIME =====
+function mockRealtime() {
+  // Randomly tweak event probabilities slightly
+  events.forEach(e => {
+    e.yes = Math.max(5, Math.min(95, e.yes + (Math.random() - 0.5) * 0.5));
+    e.vol += Math.floor(Math.random() * 500);
+  });
+  if (document.getElementById('page-hall').classList.contains('active')) renderEvents();
+}
+
+// ===== CHART TIMEFRAME CLICKS =====
+document.querySelectorAll('.chart-tf').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.chart-tf').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+    renderChart(currentEvent.yes / 100);
+  });
+});
+
+// ===== ORDER TAB CLICKS =====
+document.querySelectorAll('.tp-order-tab').forEach(btn => {
+  btn.addEventListener('click', function() {
+    document.querySelectorAll('.tp-order-tab').forEach(b => b.classList.remove('active'));
+    this.classList.add('active');
+  });
+});
+
+// ===== INIT =====
+renderEvents();
+initTicker();
+calcTrade();
+setInterval(mockRealtime, 3000);
+</script>
+</body>
+</html>
