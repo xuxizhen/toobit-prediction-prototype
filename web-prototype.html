@@ -762,6 +762,152 @@ input { font-family: inherit; outline: none; border: none; }
 .tp-submit.buy-yes:hover { background: #2563eb; }
 .tp-submit.buy-no { background: var(--no-pink); }
 .tp-submit.buy-no:hover { background: #db2777; }
+.tp-submit.sell-yes {
+  background: transparent;
+  border: 2px solid var(--yes-blue);
+  color: var(--yes-blue);
+}
+.tp-submit.sell-yes:hover { background: rgba(59,130,246,0.15); }
+.tp-submit.sell-no {
+  background: transparent;
+  border: 2px solid var(--no-pink);
+  color: var(--no-pink);
+}
+.tp-submit.sell-no:hover { background: rgba(236,72,153,0.15); }
+
+/* Buy/Sell Toggle */
+.bs-toggle {
+  display: flex;
+  gap: 0;
+  margin-top: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.bs-toggle-btn {
+  flex: 1;
+  padding: 8px 0;
+  font-size: 13px;
+  font-weight: 500;
+  text-align: center;
+  background: transparent;
+  color: var(--text-muted);
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+}
+.bs-toggle-btn:hover { color: var(--text-secondary); }
+.bs-toggle-btn.active { color: #fff; border-bottom-color: var(--yes-blue); }
+
+/* More Actions Button */
+.tp-more-actions-btn {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  transition: all .2s;
+}
+.tp-more-actions-btn:hover { color: #fff; border-color: var(--text-secondary); }
+
+/* Modal Overlay */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 2000;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  width: 380px;
+  max-width: 90vw;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+}
+.modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.modal-close {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 20px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all .15s;
+}
+.modal-close:hover { color: #fff; background: rgba(255,255,255,0.05); }
+.modal-section {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+.modal-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 4px;
+}
+.modal-section-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.modal-info {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.modal-input-wrap {
+  display: flex;
+  align-items: center;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 12px;
+  margin-bottom: 12px;
+}
+.modal-input-wrap input {
+  flex: 1;
+  background: transparent;
+  color: #fff;
+  padding: 10px 8px;
+  font-size: 14px;
+  text-align: center;
+}
+.modal-input-wrap input::placeholder { color: var(--text-muted); }
+.modal-input-wrap .unit {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.modal-action-btn {
+  width: 100%;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  transition: all .2s;
+}
+.modal-action-btn.merge { background: var(--green); }
+.modal-action-btn.merge:hover { opacity: 0.85; }
+.modal-action-btn.split { background: var(--accent); }
+.modal-action-btn.split:hover { opacity: 0.85; }
 
 /* Recent Trades */
 .recent-trades {
@@ -1120,6 +1266,10 @@ input { font-family: inherit; outline: none; border: none; }
           <button class="yn-btn yes active" onclick="toggleYN('yes')">YES</button>
           <button class="yn-btn no" onclick="toggleYN('no')">NO</button>
         </div>
+        <div class="bs-toggle">
+          <button class="bs-toggle-btn active" onclick="toggleBuySell('buy')">买入 (Buy)</button>
+          <button class="bs-toggle-btn" onclick="toggleBuySell('sell')">卖出 (Sell)</button>
+        </div>
       </div>
       <div class="tp-body">
         <div class="tp-order-tabs">
@@ -1164,6 +1314,7 @@ input { font-family: inherit; outline: none; border: none; }
           潜在收益 <span class="highlight">+61.3%</span>
         </div>
         <button class="tp-submit buy-yes" id="tpSubmitBtn" onclick="submitOrder()">Buy YES</button>
+        <button class="tp-more-actions-btn" onclick="openMoreActionsModal()">&#x22EF; 更多操作</button>
       </div>
       <div class="recent-trades">
         <div class="rt-title">最近成交</div>
@@ -1353,6 +1504,42 @@ input { font-family: inherit; outline: none; border: none; }
   <div class="ticker-track" id="tickerTrack"></div>
 </div>
 
+<!-- ==================== MODAL: MORE ACTIONS ==================== -->
+<div class="modal-overlay" id="moreActionsModal" onclick="if(event.target===this)closeMoreActionsModal()">
+  <div class="modal-box">
+    <div class="modal-title">
+      <span>更多操作</span>
+      <button class="modal-close" onclick="closeMoreActionsModal()">&times;</button>
+    </div>
+
+    <!-- Merge Section -->
+    <div class="modal-section">
+      <div class="modal-section-title">合并份额 (Merge)</div>
+      <div class="modal-section-desc">同时持有 YES + NO 份额可合并赎回 1 USDT/对</div>
+      <div class="modal-info">可合并数量: <strong id="mergeMax">150</strong> 对 &nbsp;(min(YES持仓, NO持仓))</div>
+      <div class="modal-input-wrap">
+        <input type="number" id="mergeQty" value="50" min="1" placeholder="合并数量" oninput="updateMergePreview()">
+        <span class="unit">对</span>
+      </div>
+      <div class="modal-info" id="mergePreview" style="color:var(--green);margin-bottom:12px">合并 50 对，赎回 50.00 USDT</div>
+      <button class="modal-action-btn merge" onclick="executeMerge()">合并赎回</button>
+    </div>
+
+    <!-- Split Section -->
+    <div class="modal-section">
+      <div class="modal-section-title">拆分份额 (Split / Mint)</div>
+      <div class="modal-section-desc">投入 1 USDT 可拆分为 1 YES + 1 NO 份额</div>
+      <div class="modal-info">可用余额: <strong>1,250.00 USDT</strong></div>
+      <div class="modal-input-wrap">
+        <input type="number" id="splitQty" value="100" min="1" placeholder="USDT 数量" oninput="updateSplitPreview()">
+        <span class="unit">USDT</span>
+      </div>
+      <div class="modal-info" id="splitPreview" style="color:var(--accent);margin-bottom:12px">投入 100 USDT，获得 100 YES + 100 NO</div>
+      <button class="modal-action-btn split" onclick="executeSplit()">拆分铸造</button>
+    </div>
+  </div>
+</div>
+
 <!-- ==================== JAVASCRIPT ==================== -->
 <script>
 // ===== DATA =====
@@ -1371,6 +1558,8 @@ let currentCategory = 'all';
 let currentSort = 'volume';
 let currentEvent = events[0];
 let tradeDirection = 'yes';
+let tradeSide = 'buy'; // 'buy' or 'sell'
+const userHoldings = { yes: 200, no: 150 }; // mock holdings
 
 // ===== PAGE NAVIGATION =====
 function showPage(page) {
@@ -1459,6 +1648,11 @@ function loadTradeData() {
   const price = tradeDirection === 'yes' ? yesPrice : noPrice;
   document.getElementById('tpPrice').value = price;
 
+  // Reset to buy mode when opening a new trade
+  tradeSide = 'buy';
+  document.querySelectorAll('.bs-toggle-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bs-toggle-btn')[0].classList.add('active');
+
   toggleYN(tradeDirection);
   renderOrderBook(parseFloat(yesPrice));
   renderRecentTrades(parseFloat(yesPrice));
@@ -1474,15 +1668,28 @@ function toggleYN(dir) {
   const noPrice = ((100 - currentEvent.yes) / 100).toFixed(2);
   const price = dir === 'yes' ? yesPrice : noPrice;
   document.getElementById('tpPrice').value = price;
-  const btn = document.getElementById('tpSubmitBtn');
-  if (dir === 'yes') {
-    btn.className = 'tp-submit buy-yes';
-    btn.textContent = 'Buy YES';
-  } else {
-    btn.className = 'tp-submit buy-no';
-    btn.textContent = 'Buy NO';
-  }
+  updateSubmitButton();
   calcTrade();
+}
+
+function toggleBuySell(side) {
+  tradeSide = side;
+  document.querySelectorAll('.bs-toggle-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.bs-toggle-btn')[side === 'buy' ? 0 : 1].classList.add('active');
+  updateSubmitButton();
+  calcTrade();
+}
+
+function updateSubmitButton() {
+  const btn = document.getElementById('tpSubmitBtn');
+  const dir = tradeDirection.toUpperCase();
+  if (tradeSide === 'buy') {
+    btn.className = 'tp-submit buy-' + tradeDirection;
+    btn.textContent = 'Buy ' + dir;
+  } else {
+    btn.className = 'tp-submit sell-' + tradeDirection;
+    btn.textContent = 'Sell ' + dir;
+  }
 }
 
 function adjustPrice(delta) {
@@ -1505,41 +1712,128 @@ function setPct(pct) {
   document.querySelectorAll('.tp-pct').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
   const price = parseFloat(document.getElementById('tpPrice').value);
-  const balance = 1250;
-  const maxShares = Math.floor((balance * pct / 100) / price);
-  document.getElementById('tpQty').value = maxShares;
+  if (tradeSide === 'buy') {
+    const balance = 1250;
+    const maxShares = Math.floor((balance * pct / 100) / price);
+    document.getElementById('tpQty').value = maxShares;
+  } else {
+    const holdings = tradeDirection === 'yes' ? userHoldings.yes : userHoldings.no;
+    const shares = Math.floor(holdings * pct / 100);
+    document.getElementById('tpQty').value = shares;
+  }
   calcTrade();
 }
 
 function calcTrade() {
   const price = parseFloat(document.getElementById('tpPrice').value) || 0;
   const qty = parseInt(document.getElementById('tpQty').value) || 0;
-  const cost = price * qty;
-  const fee = cost * 0.001;
-  const total = cost + fee;
-  const payout = qty * 1;
-  const returnPct = cost > 0 ? ((payout - total) / total * 100) : 0;
-
-  document.getElementById('tpCost').textContent = cost.toFixed(2) + ' USDT';
-  document.getElementById('tpFee').textContent = fee.toFixed(2) + ' USDT';
-  document.getElementById('tpTotal').textContent = total.toFixed(2) + ' USDT';
-
-  const maxShares = Math.floor(1250 / price);
-  document.getElementById('tpMaxShares').textContent = 'Max: ' + maxShares.toLocaleString();
-
   const dir = tradeDirection.toUpperCase();
-  document.getElementById('tpExpected').innerHTML =
-    `投入 <strong>${total.toFixed(2)} USDT</strong> 买入 ${dir}@${price.toFixed(2)}<br>` +
-    `若胜出获得 <span class="highlight">${payout.toFixed(2)} USDT</span><br>` +
-    `潜在收益 <span class="highlight">+${returnPct.toFixed(1)}%</span>`;
+  const balanceEl = document.querySelector('.tp-balance');
+
+  if (tradeSide === 'buy') {
+    const cost = price * qty;
+    const fee = cost * 0.001;
+    const total = cost + fee;
+    const payout = qty * 1;
+    const returnPct = cost > 0 ? ((payout - total) / total * 100) : 0;
+
+    const summaryLabels = document.querySelectorAll('.tp-summary-row .label');
+    summaryLabels[0].textContent = '成本';
+    summaryLabels[2].textContent = '合计';
+
+    document.getElementById('tpCost').textContent = cost.toFixed(2) + ' USDT';
+    document.getElementById('tpFee').textContent = fee.toFixed(2) + ' USDT';
+    document.getElementById('tpTotal').textContent = total.toFixed(2) + ' USDT';
+
+    const maxShares = price > 0 ? Math.floor(1250 / price) : 0;
+    document.getElementById('tpMaxShares').textContent = 'Max: ' + maxShares.toLocaleString();
+
+    balanceEl.querySelector('.label').textContent = '可用余额 ';
+    balanceEl.querySelector('.val').textContent = '1,250.00 USDT';
+
+    document.getElementById('tpExpected').innerHTML =
+      `投入 <strong>${total.toFixed(2)} USDT</strong> 买入 ${dir}@${price.toFixed(2)}<br>` +
+      `若胜出获得 <span class="highlight">${payout.toFixed(2)} USDT</span><br>` +
+      `潜在收益 <span class="highlight">+${returnPct.toFixed(1)}%</span>`;
+  } else {
+    // Sell mode
+    const holdings = tradeDirection === 'yes' ? userHoldings.yes : userHoldings.no;
+    const proceeds = price * qty;
+    const fee = proceeds * 0.001;
+    const net = proceeds - fee;
+
+    const summaryLabels = document.querySelectorAll('.tp-summary-row .label');
+    summaryLabels[0].textContent = '收入';
+    summaryLabels[2].textContent = '到手';
+
+    document.getElementById('tpCost').textContent = proceeds.toFixed(2) + ' USDT';
+    document.getElementById('tpFee').textContent = fee.toFixed(2) + ' USDT';
+    document.getElementById('tpTotal').textContent = net.toFixed(2) + ' USDT';
+
+    document.getElementById('tpMaxShares').textContent = 'Max: ' + holdings;
+
+    balanceEl.querySelector('.label').textContent = '可用份额 ';
+    balanceEl.querySelector('.val').textContent = holdings + ' ' + dir;
+
+    document.getElementById('tpExpected').innerHTML =
+      `卖出 <strong>${qty}</strong> 份 ${dir}@${price.toFixed(2)}，获得 <span class="highlight">${net.toFixed(2)} USDT</span><br>` +
+      `手续费 ${fee.toFixed(2)} USDT`;
+  }
 }
 
 function submitOrder() {
   const btn = document.getElementById('tpSubmitBtn');
   const orig = btn.textContent;
+  const origClass = btn.className;
   btn.textContent = '已提交 ✓';
   btn.style.opacity = '0.6';
-  setTimeout(() => { btn.textContent = orig; btn.style.opacity = '1'; }, 1500);
+  setTimeout(() => { btn.textContent = orig; btn.className = origClass; btn.style.opacity = '1'; }, 1500);
+}
+
+// ===== MORE ACTIONS MODAL =====
+function openMoreActionsModal() {
+  const mergeMax = Math.min(userHoldings.yes, userHoldings.no);
+  document.getElementById('mergeMax').textContent = mergeMax;
+  document.getElementById('mergeQty').max = mergeMax;
+  updateMergePreview();
+  updateSplitPreview();
+  document.getElementById('moreActionsModal').classList.add('open');
+}
+
+function closeMoreActionsModal() {
+  document.getElementById('moreActionsModal').classList.remove('open');
+}
+
+function updateMergePreview() {
+  const qty = parseInt(document.getElementById('mergeQty').value) || 0;
+  const mergeMax = Math.min(userHoldings.yes, userHoldings.no);
+  const capped = Math.min(qty, mergeMax);
+  const payout = capped * 1.0;
+  document.getElementById('mergePreview').textContent = `合并 ${capped} 对，赎回 ${payout.toFixed(2)} USDT`;
+}
+
+function updateSplitPreview() {
+  const qty = parseInt(document.getElementById('splitQty').value) || 0;
+  document.getElementById('splitPreview').textContent = `投入 ${qty} USDT，获得 ${qty} YES + ${qty} NO`;
+}
+
+function executeMerge() {
+  const qty = parseInt(document.getElementById('mergeQty').value) || 0;
+  const mergeMax = Math.min(userHoldings.yes, userHoldings.no);
+  if (qty <= 0 || qty > mergeMax) { alert('请输入有效的合并数量'); return; }
+  const btn = event.target;
+  btn.textContent = '已合并 ✓';
+  btn.style.opacity = '0.6';
+  setTimeout(() => { btn.textContent = '合并赎回'; btn.style.opacity = '1'; }, 1500);
+}
+
+function executeSplit() {
+  const qty = parseInt(document.getElementById('splitQty').value) || 0;
+  if (qty <= 0 || qty > 1250) { alert('请输入有效的拆分数量'); return; }
+  const btn = event.target;
+  btn.textContent = '已拆分 ✓';
+  btn.style.opacity = '0.6';
+  setTimeout(() => { btn.textContent = '拆分铸造'; btn.style.opacity = '1'; }, 1500);
 }
 
 // ===== ORDER BOOK =====
