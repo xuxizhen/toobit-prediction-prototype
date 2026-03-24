@@ -1123,6 +1123,37 @@ table tbody tr:hover { background: #f8fafc; }
         </div>
       </div>
 
+      <!-- Region Config -->
+      <div class="card mb-20">
+        <div class="card-header">
+          <h3>国家/地区开放配置 (合规准入)</h3>
+          <div><label class="toggle-switch"><input type="checkbox" checked><span class="toggle-slider"></span></label> <span style="font-size:13px;vertical-align:top;margin-left:5px;font-weight:normal;color:#64748b;">启用地区限制</span></div>
+        </div>
+        <div class="card-body">
+          <div style="font-size:13px; color:#64748b; margin-bottom: 12px;">配置允许或禁止访问预测市场功能的国家与地区（基于 KYC/IP 判定）</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">准入模式</label>
+              <select class="form-select">
+                <option>黑名单模式 (阻止选定地区)</option>
+                <option>白名单模式 (仅允许选定地区)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">受限地区列表 (支持多选)</label>
+              <select class="form-select" multiple style="height: 80px;">
+                <option selected>美国 (USA)</option>
+                <option selected>中国大陆 (Mainland China)</option>
+                <option selected>新加坡 (Singapore)</option>
+                <option>英国 (UK)</option>
+                <option>日本 (Japan)</option>
+              </select>
+            </div>
+          </div>
+          <button class="btn btn-sm btn-primary">保存配置</button>
+        </div>
+      </div>
+
       <!-- Risk Rules -->
       <div class="card">
         <div class="card-header"><h3>风控规则配置</h3></div>
@@ -1196,7 +1227,7 @@ table tbody tr:hover { background: #f8fafc; }
           <div class="stat-sub up">&#9650; 8.3% 较上周</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">手续费收入</div>
+          <div class="stat-label">抽成及手续费收入</div>
           <div class="stat-value">$24,600</div>
           <div class="stat-sub up">&#9650; 12.1% 较上周</div>
         </div>

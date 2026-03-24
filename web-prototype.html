@@ -426,6 +426,11 @@ input { font-family: inherit; outline: none; border: none; }
   flex-direction: column;
   overflow: hidden;
 }
+.trade-center-content {
+  display: flex;
+  flex: 1;
+  border-bottom: 1px solid var(--border);
+}
 .event-header {
   padding: 16px 20px;
   border-bottom: 1px solid var(--border);
@@ -454,7 +459,7 @@ input { font-family: inherit; outline: none; border: none; }
   min-height: 350px;
   position: relative;
   background: var(--bg-primary);
-  border-bottom: 1px solid var(--border);
+  border-right: 1px solid var(--border);
 }
 .chart-toolbar {
   display: flex;
@@ -515,12 +520,34 @@ input { font-family: inherit; outline: none; border: none; }
 
 /* Order Book */
 .orderbook {
-  height: 280px;
+  width: 280px;
   background: var(--bg-secondary);
-  border-top: 1px solid var(--border);
   display: flex;
   flex-direction: column;
 }
+.sr-panel {
+  height: 250px;
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+}
+.sr-header {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+}
+.sr-body {
+  padding: 16px;
+  overflow-y: auto;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+.sr-body h4 { color: #fff; margin-bottom: 8px; font-size: 13px; }
+.sr-body p { margin-bottom: 12px; }
+.sr-body .highlight { color: var(--yes-blue); }
 .ob-header {
   display: flex;
   justify-content: space-between;
@@ -528,7 +555,15 @@ input { font-family: inherit; outline: none; border: none; }
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
 }
-.ob-title { font-size: 13px; font-weight: 600; color: #fff; }
+.ob-main-tabs { display: flex; gap: 16px; align-items: center; height: 100%; }
+.ob-main-tab { 
+  font-size: 13px; font-weight: 600; color: var(--text-muted); 
+  background: transparent; border: none; cursor: pointer; 
+  padding-bottom: 9px; margin-bottom: -11px;
+  border-bottom: 2px solid transparent; transition: all .2s;
+}
+.ob-main-tab:hover { color: var(--text-secondary); }
+.ob-main-tab.active { color: #fff; border-bottom-color: var(--yes-blue); }
 .ob-tabs { display: flex; gap: 4px; }
 .ob-tab {
   width: 24px; height: 18px;
@@ -1219,43 +1254,80 @@ input { font-family: inherit; outline: none; border: none; }
         </div>
       </div>
 
-      <!-- Chart -->
-      <div class="chart-area">
-        <div class="chart-toolbar">
-          <button class="chart-tf">1m</button>
-          <button class="chart-tf">5m</button>
-          <button class="chart-tf">15m</button>
-          <button class="chart-tf active">1H</button>
-          <button class="chart-tf">4H</button>
-          <button class="chart-tf">1D</button>
-          <span style="flex:1"></span>
-          <span style="font-size:11px;color:var(--text-muted)">TradingView</span>
-        </div>
-        <div class="chart-canvas">
-          <div class="chart-mock" id="chartMock"></div>
-          <div class="chart-price-labels">
-            <span>0.80</span><span>0.70</span><span>0.60</span><span>0.50</span><span>0.40</span><span>0.30</span>
+      <div class="trade-center-content">
+        <!-- Chart -->
+        <div class="chart-area">
+          <div class="chart-toolbar">
+            <button class="chart-tf">1m</button>
+            <button class="chart-tf">5m</button>
+            <button class="chart-tf">15m</button>
+            <button class="chart-tf active">1H</button>
+            <button class="chart-tf">4H</button>
+            <button class="chart-tf">1D</button>
+            <span style="flex:1"></span>
+            <span style="font-size:11px;color:var(--text-muted)">TradingView</span>
           </div>
-          <div class="chart-current-price" id="chartCurrentPrice">0.62</div>
+          <div class="chart-canvas">
+            <div class="chart-mock" id="chartMock"></div>
+            <div class="chart-price-labels">
+              <span>0.80</span><span>0.70</span><span>0.60</span><span>0.50</span><span>0.40</span><span>0.30</span>
+            </div>
+            <div class="chart-current-price" id="chartCurrentPrice">0.62</div>
+          </div>
+        </div>
+
+        <!-- Order Book -->
+        <div class="orderbook">
+          <div class="ob-header">
+            <div class="ob-main-tabs">
+              <button class="ob-main-tab active" onclick="switchObMainTab('book', this)">Order Book</button>
+              <button class="ob-main-tab" onclick="switchObMainTab('trades', this)">最新成交</button>
+            </div>
+            <div class="ob-tabs" id="obDepthControls">
+              <div class="ob-tab active"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
+              <div class="ob-tab"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
+              <div class="ob-tab"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
+            </div>
+          </div>
+          
+          <div id="obContentBook" style="display:flex; flex-direction:column; flex:1; overflow:hidden;">
+            <div class="ob-col-headers">
+              <span>Price (USDT)</span><span>Qty (Shares)</span><span>Total</span>
+            </div>
+            <div class="ob-body" id="obAsks"></div>
+            <div class="ob-spread"><span class="label">Spread</span><span id="obSpreadVal">0.01 (1.6%)</span></div>
+            <div class="ob-body" id="obBids"></div>
+          </div>
+
+          <div id="obContentTrades" style="display:none; flex-direction:column; flex:1; overflow:hidden;">
+            <div class="rt-header" style="border-bottom: 1px solid var(--border); padding: 6px 16px;"><span>Price</span><span style="text-align:center">Qty</span><span style="text-align:right">Time</span></div>
+            <div class="ob-body" id="recentTradesBody" style="padding: 0 16px;"></div>
+          </div>
+
+          <script>
+            function switchObMainTab(tab, el) {
+              const tabs = el.parentElement.querySelectorAll('.ob-main-tab');
+              tabs.forEach(t => t.classList.remove('active'));
+              el.classList.add('active');
+              document.getElementById('obContentBook').style.display = tab === 'book' ? 'flex' : 'none';
+              document.getElementById('obContentTrades').style.display = tab === 'trades' ? 'flex' : 'none';
+              document.getElementById('obDepthControls').style.display = tab === 'book' ? 'flex' : 'none';
+            }
+          </script>
         </div>
       </div>
 
-      <!-- Order Book -->
-      <div class="orderbook">
-        <div class="ob-header">
-          <span class="ob-title">Order Book</span>
-          <div class="ob-tabs">
-            <div class="ob-tab active"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
-            <div class="ob-tab"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
-            <div class="ob-tab"><div class="ob-tab-lines"><div class="ob-tab-line"></div><div class="ob-tab-line"></div><div class="ob-tab-line"></div></div></div>
-          </div>
+      <!-- Settlement Rules -->
+      <div class="sr-panel">
+        <div class="sr-header">结算规则判定 (Settlement Rules)</div>
+        <div class="sr-body">
+          <h4>事件判定条件</h4>
+          <p>若 BTC/USD 现货价格在 <span class="highlight">2026 年 3 月 20 日 23:59 UTC</span> 之前的任意时刻触及或超过 <span class="highlight">$90,000</span> (以 CoinGecko API 数据为准)，则结果为 YES。否则结果为 NO。</p>
+          <h4>结算与费用</h4>
+          <p>结算时，胜出方向份额按 1 USDT/Share 赎回（扣除潜在盈利1-2%的抽成），失败方向份额归零。在当前阶段，日常交易环节实行0手续费。</p>
+          <h4>争议与申诉</h4>
+          <p>自初步判定结果公示起将有 30 分钟冷静期，冷静期内若数据源异常可发起申诉。超过冷静期未撤回即自动执行兑付结算。</p>
         </div>
-        <div class="ob-col-headers">
-          <span>Price (USDT)</span><span>Qty (Shares)</span><span>Total</span>
-        </div>
-        <div class="ob-body" id="obAsks"></div>
-        <div class="ob-spread"><span class="label">Spread</span><span id="obSpreadVal">0.01 (1.6%)</span></div>
-        <div class="ob-body" id="obBids"></div>
       </div>
     </main>
 
@@ -1305,8 +1377,8 @@ input { font-family: inherit; outline: none; border: none; }
         </div>
         <div class="tp-summary">
           <div class="tp-summary-row"><span class="label">成本</span><span class="val" id="tpCost">62.00 USDT</span></div>
-          <div class="tp-summary-row"><span class="label">手续费 (0.1%)</span><span class="val" id="tpFee">0.06 USDT</span></div>
-          <div class="tp-summary-row"><span class="label">合计</span><span class="val" id="tpTotal">62.06 USDT</span></div>
+          <div class="tp-summary-row"><span class="label">手续费 (0%)</span><span class="val" id="tpFee">0.00 USDT</span></div>
+          <div class="tp-summary-row"><span class="label">合计</span><span class="val" id="tpTotal">62.00 USDT</span></div>
         </div>
         <div class="tp-expected" id="tpExpected">
           投入 <strong>62.06 USDT</strong> 买入 YES@0.62<br>
@@ -1316,11 +1388,7 @@ input { font-family: inherit; outline: none; border: none; }
         <button class="tp-submit buy-yes" id="tpSubmitBtn" onclick="submitOrder()">Buy YES</button>
         <button class="tp-more-actions-btn" onclick="openMoreActionsModal()">&#x22EF; 更多操作</button>
       </div>
-      <div class="recent-trades">
-        <div class="rt-title">最近成交</div>
-        <div class="rt-header"><span>Price</span><span>Qty</span><span>Time</span></div>
-        <div id="recentTradesBody"></div>
-      </div>
+      <!-- recent trades moved -->
     </aside>
 
     <!-- Bottom Section -->
@@ -1732,7 +1800,7 @@ function calcTrade() {
 
   if (tradeSide === 'buy') {
     const cost = price * qty;
-    const fee = cost * 0.001;
+    const fee = cost * 0; // 当前 0 费率
     const total = cost + fee;
     const payout = qty * 1;
     const returnPct = cost > 0 ? ((payout - total) / total * 100) : 0;
@@ -1759,7 +1827,7 @@ function calcTrade() {
     // Sell mode
     const holdings = tradeDirection === 'yes' ? userHoldings.yes : userHoldings.no;
     const proceeds = price * qty;
-    const fee = proceeds * 0.001;
+    const fee = proceeds * 0; // 当前 0 费率
     const net = proceeds - fee;
 
     const summaryLabels = document.querySelectorAll('.tp-summary-row .label');
